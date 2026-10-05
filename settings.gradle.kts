@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "MatchNotes"
 include(":mobile")
 include(":wear")
+include(":shared")
