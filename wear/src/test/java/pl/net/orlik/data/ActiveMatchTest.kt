@@ -1,7 +1,9 @@
 package pl.net.orlik.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.Pause
@@ -37,6 +39,13 @@ class ActiveMatchTest {
             listOf(Pause(200, 300), Pause(400, null)),
             activeMatchFrom(events)?.pauses,
         )
+    }
+
+    @Test
+    fun isPaused_onlyWhileLastPauseIsOpen() {
+        assertFalse(ActiveMatch("m1", 0).isPaused)
+        assertTrue(ActiveMatch("m1", 0, listOf(Pause(10, null))).isPaused)
+        assertFalse(ActiveMatch("m1", 0, listOf(Pause(10, 20))).isPaused)
     }
 
     private fun event(at: Long, type: EventType?) =

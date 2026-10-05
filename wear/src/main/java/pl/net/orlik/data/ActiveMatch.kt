@@ -8,7 +8,11 @@ data class ActiveMatch(
     val matchId: String,
     val startedAt: Long,
     val pauses: List<Pause> = emptyList(),
-)
+) {
+    /** True while the last pause has not been resumed. */
+    val isPaused: Boolean
+        get() = pauses.lastOrNull()?.let { it.resumedAt == null } ?: false
+}
 
 /**
  * Rebuilds the active match from the events of a single match, sorted by time.

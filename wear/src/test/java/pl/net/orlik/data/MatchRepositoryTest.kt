@@ -2,9 +2,12 @@ package pl.net.orlik.data
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.net.orlik.shared.EventType
+import pl.net.orlik.shared.Pause
 
 class MatchRepositoryTest {
 
@@ -49,6 +52,28 @@ class MatchRepositoryTest {
         repository.endMatch(match)
 
         assertNull(repository.findActiveMatch())
+    }
+
+    @Test
+    fun pauseAndResume_areRecorded_andRestored() = runBlocking {
+        var now = 1_000L
+        val repository = MatchRepository(dao, clock = { now })
+        val started = repository.startMatch()
+
+        now = 2_000
+        val paused = repository.pauseMatch(started)
+        assertTrue(paused.isPaused)
+        assertEquals(paused, repository.findActiveMatch())
+
+        now = 3_000
+        val resumed = repository.resumeMatch(paused)
+        assertFalse(resumed.isPaused)
+        assertEquals(listOf(Pause(2_000, 3_000)), resumed.pauses)
+        assertEquals(resumed, repository.findActiveMatch())
+        assertEquals(
+            listOf(EventType.MATCH_START, EventType.MATCH_PAUSE, EventType.MATCH_RESUME),
+            dao.events.map { it.type },
+        )
     }
 
     @Test

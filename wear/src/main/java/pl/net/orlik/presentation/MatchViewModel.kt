@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +39,18 @@ class MatchViewModel(private val repository: MatchRepository) : ViewModel() {
         _state.value = MatchUiState.Loading
         viewModelScope.launch {
             _state.value = MatchUiState.InProgress(repository.startMatch())
+        }
+    }
+
+    private var pauseJob: Job? = null
+
+    fun togglePause() {
+        val match = (_state.value as? MatchUiState.InProgress)?.match ?: return
+        // Ignore taps while the previous one is being saved; keep the clock on screen meanwhile
+        if (pauseJob?.isActive == true) return
+        pauseJob = viewModelScope.launch {
+            val updated = if (match.isPaused) repository.resumeMatch(match) else repository.pauseMatch(match)
+            _state.value = MatchUiState.InProgress(updated)
         }
     }
 

@@ -2,4 +2,6 @@
     <string name="app_name">MatchNotes</string>
     <string name="start_match">Start meczu</string>
     <string name="end_match">Koniec meczu</string>
+    <string name="pause_match">Pauza</string>
+    <string name="resume_match">Wznów</string>
 </resources>

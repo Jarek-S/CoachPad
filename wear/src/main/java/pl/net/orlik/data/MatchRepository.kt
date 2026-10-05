@@ -2,6 +2,7 @@ package pl.net.orlik.data
 
 import java.util.UUID
 import pl.net.orlik.shared.EventType
+import pl.net.orlik.shared.Pause
 
 /** Records match lifecycle events in the watch queue. */
 class MatchRepository(
@@ -23,6 +24,20 @@ class MatchRepository(
         val match = ActiveMatch(matchId = UUID.randomUUID().toString(), startedAt = clock())
         dao.insert(structuralEvent(match.matchId, EventType.MATCH_START, match.startedAt))
         return match
+    }
+
+    /** Pauses [match] by recording MATCH_PAUSE; returns the updated match. */
+    suspend fun pauseMatch(match: ActiveMatch): ActiveMatch {
+        val at = clock()
+        dao.insert(structuralEvent(match.matchId, EventType.MATCH_PAUSE, at))
+        return match.copy(pauses = match.pauses + Pause(pausedAt = at))
+    }
+
+    /** Resumes paused [match] by recording MATCH_RESUME; returns the updated match. */
+    suspend fun resumeMatch(match: ActiveMatch): ActiveMatch {
+        val at = clock()
+        dao.insert(structuralEvent(match.matchId, EventType.MATCH_RESUME, at))
+        return match.copy(pauses = match.pauses.dropLast(1) + match.pauses.last().copy(resumedAt = at))
     }
 
     /** Ends [match] by recording MATCH_END. Allowed during a pause too. */
