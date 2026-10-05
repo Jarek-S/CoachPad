@@ -25,6 +25,11 @@ class MatchRepository(
         return match
     }
 
+    /** Ends [match] by recording MATCH_END. Allowed during a pause too. */
+    suspend fun endMatch(match: ActiveMatch) {
+        dao.insert(structuralEvent(match.matchId, EventType.MATCH_END, clock()))
+    }
+
     private fun structuralEvent(matchId: String, type: EventType, at: Long) = MatchEvent(
         id = UUID.randomUUID().toString(),
         matchId = matchId,

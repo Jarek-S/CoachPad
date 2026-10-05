@@ -31,6 +31,27 @@ class MatchRepositoryTest {
     }
 
     @Test
+    fun endMatch_recordsMatchEnd_andMatchIsNoLongerActive() = runBlocking {
+        val match = repository.startMatch()
+        repository.endMatch(match)
+
+        val end = dao.events.last()
+        assertEquals(EventType.MATCH_END, end.type)
+        assertEquals(match.matchId, end.matchId)
+        assertNull(end.audioFileRef)
+        assertNull(repository.findActiveMatch())
+    }
+
+    @Test
+    fun endMatch_duringPause_endsMatch() = runBlocking {
+        val match = repository.startMatch()
+        dao.insert(MatchEvent("p", match.matchId, 1_000, EventType.MATCH_PAUSE, audioFileRef = null))
+        repository.endMatch(match)
+
+        assertNull(repository.findActiveMatch())
+    }
+
+    @Test
     fun emptyQueue_noActiveMatch() = runBlocking {
         assertNull(repository.findActiveMatch())
     }

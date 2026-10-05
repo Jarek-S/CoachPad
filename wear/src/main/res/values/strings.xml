@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">MatchNotes</string>
     <string name="start_match">Start meczu</string>
+    <string name="end_match">Koniec meczu</string>
 </resources>

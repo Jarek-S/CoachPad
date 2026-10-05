@@ -41,6 +41,15 @@ class MatchViewModel(private val repository: MatchRepository) : ViewModel() {
         }
     }
 
+    fun endMatch() {
+        val current = _state.value as? MatchUiState.InProgress ?: return
+        _state.value = MatchUiState.Loading
+        viewModelScope.launch {
+            repository.endMatch(current.match)
+            _state.value = MatchUiState.NoMatch
+        }
+    }
+
     companion object {
         val Factory = viewModelFactory {
             initializer {
