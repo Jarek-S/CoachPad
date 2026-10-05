@@ -4,4 +4,6 @@
     <string name="end_match">Koniec meczu</string>
     <string name="pause_match">Pauza</string>
     <string name="resume_match">Wznów</string>
+    <string name="record">Nagraj</string>
+    <string name="stop_recording">Stop</string>
 </resources>

@@ -40,6 +40,30 @@ class MatchRepository(
         return match.copy(pauses = match.pauses.dropLast(1) + match.pauses.last().copy(resumedAt = at))
     }
 
+    /** Prepares a voice recording starting now; nothing is saved until [saveVoiceRecording]. */
+    fun newVoiceRecording(match: ActiveMatch): VoiceRecording {
+        val eventId = UUID.randomUUID().toString()
+        return VoiceRecording(
+            eventId = eventId,
+            matchId = match.matchId,
+            startedAt = clock(),
+            fileName = "$eventId.m4a",
+        )
+    }
+
+    /** Queues a finished recording as an event; its type is set later on the phone. */
+    suspend fun saveVoiceRecording(recording: VoiceRecording) {
+        dao.insert(
+            MatchEvent(
+                id = recording.eventId,
+                matchId = recording.matchId,
+                recordedAt = recording.startedAt,
+                type = null,
+                audioFileRef = recording.fileName,
+            ),
+        )
+    }
+
     /** Ends [match] by recording MATCH_END. Allowed during a pause too. */
     suspend fun endMatch(match: ActiveMatch) {
         dao.insert(structuralEvent(match.matchId, EventType.MATCH_END, clock()))

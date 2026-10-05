@@ -1,30 +1,42 @@
 package pl.net.orlik.presentation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.io.File
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.net.orlik.data.ActiveMatch
 import pl.net.orlik.data.AppDatabase
 import pl.net.orlik.data.MatchRepository
+import pl.net.orlik.data.VoiceRecording
+import pl.net.orlik.recording.AudioRecorder
 
 sealed interface MatchUiState {
     /** Reading the queue to find a match in progress. */
     data object Loading : MatchUiState
     data object NoMatch : MatchUiState
-    data class InProgress(val match: ActiveMatch) : MatchUiState
+    data class InProgress(val match: ActiveMatch, val isRecording: Boolean = false) : MatchUiState
 }
 
-class MatchViewModel(private val repository: MatchRepository) : ViewModel() {
+class MatchViewModel(
+    private val repository: MatchRepository,
+    private val recorder: AudioRecorder,
+    private val recordingsDir: File,
+) : ViewModel() {
 
     private val _state = MutableStateFlow<MatchUiState>(MatchUiState.Loading)
     val state: StateFlow<MatchUiState> = _state.asStateFlow()
+
+    private var pauseJob: Job? = null
+    private var recording: VoiceRecording? = null
 
     init {
         viewModelScope.launch {
@@ -42,32 +54,75 @@ class MatchViewModel(private val repository: MatchRepository) : ViewModel() {
         }
     }
 
-    private var pauseJob: Job? = null
-
     fun togglePause() {
         val match = (_state.value as? MatchUiState.InProgress)?.match ?: return
         // Ignore taps while the previous one is being saved; keep the clock on screen meanwhile
         if (pauseJob?.isActive == true) return
         pauseJob = viewModelScope.launch {
             val updated = if (match.isPaused) repository.resumeMatch(match) else repository.pauseMatch(match)
-            _state.value = MatchUiState.InProgress(updated)
+            updateInProgress { it.copy(match = updated) }
         }
+    }
+
+    fun toggleRecording() {
+        if (recording != null) stopRecording() else startRecording()
+    }
+
+    /** Stops and saves a recording in progress, e.g. when the app leaves the screen. */
+    fun stopRecording(): Job? {
+        val current = recording ?: return null
+        recording = null
+        val recorded = recorder.stop()
+        updateInProgress { it.copy(isRecording = false) }
+        val file = File(recordingsDir, current.fileName)
+        if (!recorded) {
+            file.delete()
+            return null
+        }
+        return viewModelScope.launch { repository.saveVoiceRecording(current) }
     }
 
     fun endMatch() {
         val current = _state.value as? MatchUiState.InProgress ?: return
+        val saving = stopRecording()
         _state.value = MatchUiState.Loading
         viewModelScope.launch {
+            saving?.join()
             repository.endMatch(current.match)
             _state.value = MatchUiState.NoMatch
         }
     }
 
+    private fun startRecording() {
+        val match = (_state.value as? MatchUiState.InProgress)?.match ?: return
+        val newRecording = repository.newVoiceRecording(match)
+        val file = File(recordingsDir.apply { mkdirs() }, newRecording.fileName)
+        try {
+            recorder.start(file) { stopRecording() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Cannot start recording", e)
+            file.delete()
+            return
+        }
+        recording = newRecording
+        updateInProgress { it.copy(isRecording = true) }
+    }
+
+    private fun updateInProgress(change: (MatchUiState.InProgress) -> MatchUiState.InProgress) {
+        _state.update { if (it is MatchUiState.InProgress) change(it) else it }
+    }
+
     companion object {
+        private const val TAG = "MatchViewModel"
+
         val Factory = viewModelFactory {
             initializer {
-                val db = AppDatabase.get(this[APPLICATION_KEY]!!)
-                MatchViewModel(MatchRepository(db.matchEventDao()))
+                val app = this[APPLICATION_KEY]!!
+                MatchViewModel(
+                    repository = MatchRepository(AppDatabase.get(app).matchEventDao()),
+                    recorder = AudioRecorder(app),
+                    recordingsDir = File(app.filesDir, "recordings"),
+                )
             }
         }
     }

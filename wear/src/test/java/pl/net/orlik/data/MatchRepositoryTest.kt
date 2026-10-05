@@ -77,6 +77,27 @@ class MatchRepositoryTest {
     }
 
     @Test
+    fun voiceRecording_isSavedWithStartTime_andNoType() = runBlocking {
+        var now = 1_000L
+        val repository = MatchRepository(dao, clock = { now })
+        val match = repository.startMatch()
+
+        now = 5_000
+        val recording = repository.newVoiceRecording(match)
+        now = 12_000 // saved when recording stops; timestamp stays at start
+        repository.saveVoiceRecording(recording)
+
+        val event = dao.events.last()
+        assertEquals(recording.eventId, event.id)
+        assertEquals(match.matchId, event.matchId)
+        assertEquals(5_000L, event.recordedAt)
+        assertNull(event.type)
+        assertEquals("${recording.eventId}.m4a", event.audioFileRef)
+        // A recording does not affect the match state
+        assertEquals(match, repository.findActiveMatch())
+    }
+
+    @Test
     fun emptyQueue_noActiveMatch() = runBlocking {
         assertNull(repository.findActiveMatch())
     }
