@@ -56,6 +56,17 @@ class MatchEventDaoTest {
         assertEquals(listOf(recording, pause), dao.getByMatch("m1"))
     }
 
+    @Test
+    fun getLatestStartedMatchId_returnsNewestStart() = runBlocking {
+        assertEquals(null, dao.getLatestStartedMatchId())
+
+        dao.insert(event("a", "m1", 100, type = EventType.MATCH_START))
+        dao.insert(event("b", "m2", 300, type = EventType.MATCH_START))
+        dao.insert(event("c", "m1", 500, type = null, audio = "c.m4a"))
+
+        assertEquals("m2", dao.getLatestStartedMatchId())
+    }
+
     private fun event(id: String, matchId: String, at: Long, type: EventType?, audio: String? = null) =
         MatchEvent(id = id, matchId = matchId, recordedAt = at, type = type, audioFileRef = audio)
 }
