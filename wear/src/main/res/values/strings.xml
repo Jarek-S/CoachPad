@@ -5,5 +5,9 @@
     <string name="pause_match">Pauza</string>
     <string name="resume_match">Wznów</string>
     <string name="record">Nagraj</string>
-    <string name="stop_recording">Stop</string>
+    <string name="stop_recording">Zatrzymaj nagranie</string>
+    <!-- Labels under the small round buttons -->
+    <string name="pause_label">pauza</string>
+    <string name="resume_label">wznów</string>
+    <string name="end_label">koniec</string>
 </resources>
