@@ -4,6 +4,7 @@ import java.util.UUID
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.settings.SettingsStore
 import pl.net.orlik.shared.Pause
+import pl.net.orlik.shared.playTimeMillis
 
 /** Records match lifecycle events in the watch queue. */
 class MatchRepository(
@@ -50,6 +51,19 @@ class MatchRepository(
         val at = clock()
         dao.insert(structuralEvent(match.matchId, EventType.MATCH_RESUME, at))
         return match.copy(pauses = match.pauses.dropLast(1) + match.pauses.last().copy(resumedAt = at))
+    }
+
+    /**
+     * Confirms the substitution: the shift timer restarts its full interval from the current
+     * play time and the new timer is saved for a restart. Allowed during a pause too (the next
+     * interval then counts from the resume). No-op unless the timer is awaiting confirmation.
+     */
+    fun confirmShift(match: ActiveMatch): ActiveMatch {
+        val timer = match.shiftTimer ?: return match
+        val confirmed = timer.confirm(playTimeMillis(clock(), match.startedAt, match.pauses))
+        if (confirmed == timer) return match
+        timerStore.save(match.matchId, confirmed)
+        return match.copy(shiftTimer = confirmed)
     }
 
     /** Prepares a voice recording starting now; nothing is saved until [saveVoiceRecording]. */

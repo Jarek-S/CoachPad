@@ -21,3 +21,9 @@ val SmallIconColor = Color(0xFFB9B9BE)
 
 /** Labels under the small round buttons. */
 val SmallLabelColor = Color(0xFF8A8A8E)
+
+/** Shift timer: alarm ring, confirm button and the time-to-substitution view of the clock. */
+val ShiftColor = Color(0xFFEF9F27)
+
+/** Track of the shift timer arc along the screen edge. */
+val EdgeTrackColor = Color(0xFF1F1F21)

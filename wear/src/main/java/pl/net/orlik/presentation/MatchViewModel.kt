@@ -66,6 +66,11 @@ class MatchViewModel(
         }
     }
 
+    /** Confirms the substitution when the shift timer alarm is on; ignored otherwise. */
+    fun confirmShift() {
+        updateInProgress { it.copy(match = repository.confirmShift(it.match)) }
+    }
+
     fun toggleRecording() {
         if (recording != null) stopRecording() else startRecording()
     }

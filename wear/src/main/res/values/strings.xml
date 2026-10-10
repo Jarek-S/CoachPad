@@ -6,6 +6,7 @@
     <string name="resume_match">Wznów</string>
     <string name="record">Nagraj</string>
     <string name="stop_recording">Zatrzymaj nagranie</string>
+    <string name="confirm_shift">Potwierdź zmianę</string>
     <!-- Labels under the small round buttons -->
     <string name="pause_label">pauza</string>
     <string name="resume_label">wznów</string>

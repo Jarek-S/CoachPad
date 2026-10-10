@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,11 +53,15 @@ import pl.net.orlik.presentation.theme.MatchNotesTheme
 import pl.net.orlik.presentation.theme.MatchTimeColor
 import pl.net.orlik.presentation.theme.MicColor
 import pl.net.orlik.presentation.theme.OutlineColor
+import pl.net.orlik.presentation.theme.ShiftColor
+import pl.net.orlik.presentation.theme.EdgeTrackColor
 import pl.net.orlik.presentation.theme.SmallIconColor
 import pl.net.orlik.presentation.theme.SmallLabelColor
 import pl.net.orlik.presentation.theme.WallTimeColor
 import pl.net.orlik.recording.MAX_RECORDING_MILLIS
 import pl.net.orlik.shared.playTimeMillis
+import pl.net.orlik.timer.ShiftTimer
+import pl.net.orlik.timer.ShiftTimerState
 
 /** Clock opacity while the match is paused (docs section 10). */
 private const val PAUSED_CLOCK_ALPHA = 0.4f
@@ -68,6 +73,7 @@ fun MatchScreen(
     onStartMatch: () -> Unit,
     onOpenSettings: () -> Unit,
     onToggleRecording: () -> Unit,
+    onConfirmShift: () -> Unit,
     onTogglePause: () -> Unit,
     onEndMatch: () -> Unit,
 ) {
@@ -75,20 +81,71 @@ fun MatchScreen(
         when (state) {
             MatchUiState.Loading -> Unit
             MatchUiState.NoMatch -> StartMatch(onStartMatch, onOpenSettings)
-            is MatchUiState.InProgress -> Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                MatchClock(state.match)
-                MicButton(isRecording = state.isRecording, onClick = onToggleRecording)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    PauseButton(isPaused = state.match.isPaused, onClick = onTogglePause)
-                    EndMatchButton(onEndMatch)
-                }
-            }
+            is MatchUiState.InProgress -> MatchInProgress(state, onToggleRecording, onConfirmShift, onTogglePause, onEndMatch)
         }
     }
 }
+
+@Composable
+private fun MatchInProgress(
+    state: MatchUiState.InProgress,
+    onToggleRecording: () -> Unit,
+    onConfirmShift: () -> Unit,
+    onTogglePause: () -> Unit,
+    onEndMatch: () -> Unit,
+) {
+    val match = state.match
+    val now by currentTimeMillis()
+    // Null when the shift timer is disabled: then none of its elements are shown
+    val shiftState = match.shiftTimer?.stateAt(playTimeMillis(now, match.startedAt, match.pauses))
+    if (match.shiftTimer != null && shiftState != null) {
+        ShiftTimerEdge(match.shiftTimer, shiftState, isPaused = match.isPaused)
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        MatchClock(match, now, shiftState)
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            MicButton(isRecording = state.isRecording, onClick = onToggleRecording)
+            if (shiftState is ShiftTimerState.AwaitingConfirmation) ConfirmShiftButton(onConfirmShift)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            PauseButton(isPaused = match.isPaused, onClick = onTogglePause)
+            EndMatchButton(onEndMatch)
+        }
+    }
+}
+
+/** Current time, refreshed on every full second while on screen. */
+@Composable
+private fun currentTimeMillis(): State<Long> = produceState(System.currentTimeMillis()) {
+    while (true) {
+        value = System.currentTimeMillis()
+        delay(1000 - value % 1000)
+    }
+}
+
+/**
+ * Arc along the screen edge with the time left to the next substitution (full circle = whole
+ * interval); a full amber ring once the substitution is due. Dimmed during a pause.
+ */
+@Composable
+private fun ShiftTimerEdge(timer: ShiftTimer, state: ShiftTimerState, isPaused: Boolean) {
+    val alpha = if (isPaused) PAUSED_CLOCK_ALPHA else 1f
+    val modifier = when (state) {
+        is ShiftTimerState.Running -> Modifier.ring(
+            width = EdgeArcWidth,
+            trackColor = EdgeTrackColor,
+            progressColor = MatchTimeColor.copy(alpha = alpha),
+            progress = { state.remainingMillis.toFloat() / timer.intervalMillis },
+        )
+        else -> Modifier.ring(width = EdgeArcWidth, trackColor = ShiftColor.copy(alpha = alpha))
+    }
+    Box(Modifier.fillMaxSize().padding(2.dp).then(modifier))
+}
+
+private val EdgeArcWidth = 4.dp
 
 @Composable
 private fun StartMatch(onClick: () -> Unit, onOpenSettings: () -> Unit) {
@@ -96,7 +153,7 @@ private fun StartMatch(onClick: () -> Unit, onOpenSettings: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        GreenRoundButton(
+        RoundButton(
             iconRes = R.drawable.ic_play,
             contentDescription = stringResource(R.string.start_match),
             size = 72.dp,
@@ -117,35 +174,44 @@ private fun StartMatch(onClick: () -> Unit, onOpenSettings: () -> Unit) {
     }
 }
 
-/** Match time; a tap switches to wall-clock time (white) and back. */
+/** What the match clock shows; a tap moves on to the next one. */
+private enum class ClockView { MATCH_TIME, WALL_TIME, SHIFT_TIME }
+
+/**
+ * Match time; taps cycle through wall-clock time (white) and, when the shift timer is on,
+ * time to the next substitution (amber), then back to match time.
+ */
 @Composable
-private fun MatchClock(match: ActiveMatch) {
-    var showWallTime by rememberSaveable { mutableStateOf(false) }
-    // Current time, refreshed every second while the clock is on screen
-    val now by produceState(System.currentTimeMillis()) {
-        while (true) {
-            value = System.currentTimeMillis()
-            delay(1000 - value % 1000)
-        }
-    }
+private fun MatchClock(match: ActiveMatch, now: Long, shiftState: ShiftTimerState?) {
+    var view by rememberSaveable { mutableStateOf(ClockView.MATCH_TIME) }
+    val shown = if (view == ClockView.SHIFT_TIME && shiftState == null) ClockView.MATCH_TIME else view
     val context = LocalContext.current
-    val text = if (showWallTime) {
-        DateFormat.getTimeFormat(context).format(Date(now))
-    } else {
-        formatPlayTime(playTimeMillis(now, match.startedAt, match.pauses))
+    val text = when (shown) {
+        ClockView.MATCH_TIME -> formatPlayTime(playTimeMillis(now, match.startedAt, match.pauses))
+        ClockView.WALL_TIME -> DateFormat.getTimeFormat(context).format(Date(now))
+        ClockView.SHIFT_TIME -> formatShiftTime(shiftState!!)
     }
     Text(
         text = text,
-        color = if (showWallTime) WallTimeColor else MatchTimeColor,
+        color = when (shown) {
+            ClockView.MATCH_TIME -> MatchTimeColor
+            ClockView.WALL_TIME -> WallTimeColor
+            ClockView.SHIFT_TIME -> ShiftColor
+        },
         fontSize = 44.sp,
         lineHeight = 44.sp,
         fontWeight = FontWeight.Medium,
         // Fixed-width digits, so the clock does not jitter as it ticks
         style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
         modifier = Modifier
-            .alpha(if (match.isPaused && !showWallTime) PAUSED_CLOCK_ALPHA else 1f)
+            // Match time and time to substitution both stand still during a pause
+            .alpha(if (match.isPaused && shown != ClockView.WALL_TIME) PAUSED_CLOCK_ALPHA else 1f)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                showWallTime = !showWallTime
+                view = when (shown) {
+                    ClockView.MATCH_TIME -> ClockView.WALL_TIME
+                    ClockView.WALL_TIME -> if (shiftState != null) ClockView.SHIFT_TIME else ClockView.MATCH_TIME
+                    ClockView.SHIFT_TIME -> ClockView.MATCH_TIME
+                }
             },
     )
 }
@@ -173,7 +239,7 @@ private fun MicButton(isRecording: Boolean, onClick: () -> Unit) {
     }
     Box(
         modifier = Modifier
-            .size(70.dp)
+            .size(BigButtonBoxSize)
             .ring(
                 width = 3.dp,
                 trackColor = if (isRecording) OutlineColor else Color.Transparent,
@@ -182,29 +248,62 @@ private fun MicButton(isRecording: Boolean, onClick: () -> Unit) {
             ),
         contentAlignment = Alignment.Center,
     ) {
-        GreenRoundButton(
+        RoundButton(
             iconRes = if (isRecording) R.drawable.ic_stop else R.drawable.ic_mic,
             contentDescription = stringResource(if (isRecording) R.string.stop_recording else R.string.record),
-            size = 58.dp,
+            size = BigButtonSize,
             onClick = onClick,
         )
     }
 }
 
+/** Shown next to the microphone while the substitution is due; a plain tap with a vibration. */
 @Composable
-private fun GreenRoundButton(@DrawableRes iconRes: Int, contentDescription: String, size: Dp, onClick: () -> Unit) {
+private fun ConfirmShiftButton(onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    // Same box as the microphone, so both buttons line up
+    Box(modifier = Modifier.size(BigButtonBoxSize), contentAlignment = Alignment.Center) {
+        RoundButton(
+            iconRes = R.drawable.ic_check,
+            contentDescription = stringResource(R.string.confirm_shift),
+            size = BigButtonSize,
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                onClick()
+            },
+            color = ShiftColor,
+            // White is hard to see on amber
+            iconTint = Color.Black,
+        )
+    }
+}
+
+private val BigButtonSize = 58.dp
+
+/** Big button with room for the recording limit ring around it. */
+private val BigButtonBoxSize = 70.dp
+
+@Composable
+private fun RoundButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    size: Dp,
+    onClick: () -> Unit,
+    color: Color = MicColor,
+    iconTint: Color = Color.White,
+) {
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(MicColor)
+            .background(color)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = contentDescription,
-            tint = Color.White,
+            tint = iconTint,
             modifier = Modifier.size(size * 0.5f),
         )
     }
@@ -276,7 +375,7 @@ fun NoMatchPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.NoMatch,
-            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }
@@ -288,7 +387,23 @@ fun InProgressPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
-            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
+        )
+    }
+}
+
+@WearPreviewDevices
+@Composable
+fun ShiftAlarmPreview() {
+    val match = ActiveMatch(
+        matchId = "preview",
+        startedAt = System.currentTimeMillis() - 39 * 60_000,
+        shiftTimer = ShiftTimer(intervalMillis = 5 * 60_000L, lastResetPlayMillis = 33 * 60_000L),
+    )
+    MatchNotesTheme {
+        MatchScreen(
+            MatchUiState.InProgress(match),
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }

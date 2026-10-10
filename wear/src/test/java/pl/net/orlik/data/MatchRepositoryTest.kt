@@ -136,6 +136,47 @@ class MatchRepositoryTest {
     }
 
     @Test
+    fun confirmShift_whileAwaiting_restartsAndSavesTimer() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 6 * 60_000L
+        val confirmed = repository.confirmShift(started)
+
+        assertEquals(ShiftTimer(intervalMillis = 5 * 60_000L, lastResetPlayMillis = 6 * 60_000L), confirmed.shiftTimer)
+        assertEquals(confirmed, MatchRepository(dao, settings, timerStore).findActiveMatch())
+    }
+
+    @Test
+    fun confirmShift_whileRunning_changesNothing() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 2 * 60_000L
+        assertEquals(started, repository.confirmShift(started))
+    }
+
+    @Test
+    fun confirmShift_duringPause_nextIntervalCountsFromResume() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 6 * 60_000L
+        val paused = repository.pauseMatch(started)
+        now = 9 * 60_000L
+        val confirmed = repository.confirmShift(paused)
+
+        // Play time stood at 6:00 during the pause, so the timer restarts from there
+        assertEquals(6 * 60_000L, confirmed.shiftTimer?.lastResetPlayMillis)
+    }
+
+    @Test
     fun endMatch_clearsTimerSnapshot() = runBlocking {
         settings.current = ShiftTimerSettings(enabled = true)
         val match = repository.startMatch()
