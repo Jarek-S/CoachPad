@@ -17,7 +17,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import pl.net.orlik.presentation.theme.MatchNotesTheme
+import pl.net.orlik.settings.SettingsScreen
+import pl.net.orlik.settings.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,8 +33,32 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private const val ROUTE_MATCH = "match"
+private const val ROUTE_SETTINGS = "settings"
+
+/** App root: switches between screens by route; swiping right goes back. */
 @Composable
-fun WearApp(viewModel: MatchViewModel = viewModel(factory = MatchViewModel.Factory)) {
+fun WearApp() {
+    val navController = rememberSwipeDismissableNavController()
+    MatchNotesTheme {
+        AppScaffold {
+            SwipeDismissableNavHost(navController = navController, startDestination = ROUTE_MATCH) {
+                composable(ROUTE_MATCH) {
+                    MatchRoute(onOpenSettings = { navController.navigate(ROUTE_SETTINGS) })
+                }
+                composable(ROUTE_SETTINGS) {
+                    SettingsRoute()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MatchRoute(
+    onOpenSettings: () -> Unit,
+    viewModel: MatchViewModel = viewModel(factory = MatchViewModel.Factory),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // System dialog asking for microphone access; recording starts once granted
@@ -39,24 +68,31 @@ fun WearApp(viewModel: MatchViewModel = viewModel(factory = MatchViewModel.Facto
     // Leaving the screen ends a recording in progress (background apps get a muted microphone)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopRecording() }
 
-    MatchNotesTheme {
-        AppScaffold {
-            ScreenScaffold(
-                // During a match the wall-clock time is one tap away on the match clock (docs section 10)
-                timeText = if (state is MatchUiState.InProgress) ({}) else null,
-            ) {
-                MatchScreen(
-                    state = state,
-                    onStartMatch = viewModel::startMatch,
-                    onToggleRecording = {
-                        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                            PackageManager.PERMISSION_GRANTED
-                        if (granted) viewModel.toggleRecording() else micPermission.launch(Manifest.permission.RECORD_AUDIO)
-                    },
-                    onTogglePause = viewModel::togglePause,
-                    onEndMatch = viewModel::endMatch,
-                )
-            }
-        }
+    ScreenScaffold(
+        // During a match the wall-clock time is one tap away on the match clock (docs section 10)
+        timeText = if (state is MatchUiState.InProgress) ({}) else null,
+    ) {
+        MatchScreen(
+            state = state,
+            onStartMatch = viewModel::startMatch,
+            onOpenSettings = onOpenSettings,
+            onToggleRecording = {
+                val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED
+                if (granted) viewModel.toggleRecording() else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            },
+            onTogglePause = viewModel::togglePause,
+            onEndMatch = viewModel::endMatch,
+        )
     }
+}
+
+@Composable
+private fun SettingsRoute(viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)) {
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    SettingsScreen(
+        settings = settings,
+        onShiftTimerEnabledChange = viewModel::setShiftTimerEnabled,
+        onIntervalChange = viewModel::changeInterval,
+    )
 }

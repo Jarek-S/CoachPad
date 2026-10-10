@@ -39,6 +39,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 androidx-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "composeFoundation" }
 compose-ui-tooling = { group = "androidx.wear.compose", name = "compose-ui-tooling", version.ref = "composeUiTooling" }
+compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeMaterial3" }
 androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

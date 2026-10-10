@@ -66,6 +66,7 @@ private const val PAUSED_CLOCK_ALPHA = 0.4f
 fun MatchScreen(
     state: MatchUiState,
     onStartMatch: () -> Unit,
+    onOpenSettings: () -> Unit,
     onToggleRecording: () -> Unit,
     onTogglePause: () -> Unit,
     onEndMatch: () -> Unit,
@@ -73,7 +74,7 @@ fun MatchScreen(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         when (state) {
             MatchUiState.Loading -> Unit
-            MatchUiState.NoMatch -> StartMatch(onStartMatch)
+            MatchUiState.NoMatch -> StartMatch(onStartMatch, onOpenSettings)
             is MatchUiState.InProgress -> Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -90,7 +91,7 @@ fun MatchScreen(
 }
 
 @Composable
-private fun StartMatch(onClick: () -> Unit) {
+private fun StartMatch(onClick: () -> Unit, onOpenSettings: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -102,6 +103,17 @@ private fun StartMatch(onClick: () -> Unit) {
             onClick = onClick,
         )
         Text(stringResource(R.string.start_match), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        // Settings are reachable only between matches: a match keeps the settings it started with
+        Box(
+            modifier = Modifier
+                .size(SmallButtonSize)
+                .clip(CircleShape)
+                .ring(width = 3.dp, trackColor = OutlineColor)
+                .clickable(onClick = onOpenSettings),
+            contentAlignment = Alignment.Center,
+        ) {
+            SmallIcon(R.drawable.ic_settings, stringResource(R.string.settings))
+        }
     }
 }
 
@@ -262,7 +274,10 @@ private fun SmallIcon(@DrawableRes iconRes: Int, contentDescription: String) {
 @Composable
 fun NoMatchPreview() {
     MatchNotesTheme {
-        MatchScreen(MatchUiState.NoMatch, onStartMatch = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {})
+        MatchScreen(
+            MatchUiState.NoMatch,
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {},
+        )
     }
 }
 
@@ -273,7 +288,7 @@ fun InProgressPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
-            onStartMatch = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }

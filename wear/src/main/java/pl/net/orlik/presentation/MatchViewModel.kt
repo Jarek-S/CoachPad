@@ -16,8 +16,10 @@ import kotlinx.coroutines.launch
 import pl.net.orlik.data.ActiveMatch
 import pl.net.orlik.data.AppDatabase
 import pl.net.orlik.data.MatchRepository
+import pl.net.orlik.data.PreferencesMatchTimerStore
 import pl.net.orlik.data.VoiceRecording
 import pl.net.orlik.recording.AudioRecorder
+import pl.net.orlik.settings.PreferencesSettingsStore
 
 sealed interface MatchUiState {
     /** Reading the queue to find a match in progress. */
@@ -119,7 +121,11 @@ class MatchViewModel(
             initializer {
                 val app = this[APPLICATION_KEY]!!
                 MatchViewModel(
-                    repository = MatchRepository(AppDatabase.get(app).matchEventDao()),
+                    repository = MatchRepository(
+                        dao = AppDatabase.get(app).matchEventDao(),
+                        settings = PreferencesSettingsStore(app),
+                        timerStore = PreferencesMatchTimerStore(app),
+                    ),
                     recorder = AudioRecorder(app),
                     recordingsDir = File(app.filesDir, "recordings"),
                 )

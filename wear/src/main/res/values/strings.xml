@@ -10,4 +10,11 @@
     <string name="pause_label">pauza</string>
     <string name="resume_label">wznów</string>
     <string name="end_label">koniec</string>
+    <!-- Settings -->
+    <string name="settings">Ustawienia</string>
+    <string name="shift_timer">Timer zmian</string>
+    <string name="shift_interval">Interwał</string>
+    <string name="minutes_value">%1$d min</string>
+    <string name="shorter_interval">Krótszy interwał</string>
+    <string name="longer_interval">Dłuższy interwał</string>
 </resources>

@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.wear.tooling.preview)
     implementation(libs.compose.material3)
+    implementation(libs.compose.navigation)
     implementation(libs.compose.ui.tooling)
     implementation(libs.play.services.wearable)
     implementation(libs.room.runtime)
