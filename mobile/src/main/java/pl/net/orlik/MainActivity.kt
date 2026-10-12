@@ -23,7 +23,12 @@ class MainActivity : ComponentActivity() {
                 val viewModel: SyncViewModel = viewModel(factory = SyncViewModel.factory(application))
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SyncScreen(state = state, onSync = viewModel::sync, contentPadding = innerPadding)
+                    SyncScreen(
+                        state = state,
+                        onSync = viewModel::sync,
+                        onDelete = viewModel::deleteMatch,
+                        contentPadding = innerPadding,
+                    )
                 }
             }
         }

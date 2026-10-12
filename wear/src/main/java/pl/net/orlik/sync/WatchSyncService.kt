@@ -9,12 +9,14 @@ import pl.net.orlik.data.matchRepository
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.shared.sync.Ack
 import pl.net.orlik.shared.sync.DataLayerPaths
+import pl.net.orlik.shared.sync.DeleteMatch
 import pl.net.orlik.shared.sync.SyncCodec
 import pl.net.orlik.shared.sync.SyncRequest
 
 /**
- * Receives the phone's sync messages. The system starts this service for each message, also when
- * the app is not running. Callbacks run one at a time on a background thread, so blocking is fine.
+ * Receives the phone's sync and delete messages. The system starts this service for each message,
+ * also when the app is not running. Callbacks run one at a time on a background thread, so
+ * blocking is fine.
  */
 class WatchSyncService : WearableListenerService() {
 
@@ -26,6 +28,7 @@ class WatchSyncService : WearableListenerService() {
                     DataLayerPaths.SYNC_REQUEST ->
                         sender.onSyncRequest(event.sourceNodeId, SyncCodec.decode<SyncRequest>(event.data))
                     DataLayerPaths.ACK -> sender.onAck(event.sourceNodeId, SyncCodec.decode<Ack>(event.data))
+                    DataLayerPaths.DELETE_MATCH -> sender.onDeleteMatch(SyncCodec.decode<DeleteMatch>(event.data))
                 }
             }
         } catch (e: Exception) {

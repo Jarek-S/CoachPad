@@ -33,7 +33,10 @@ data class SyncUiState(
     val sync: SyncStatus = SyncStatus.Idle,
     val eventsOnPhone: Int = 0,
 ) {
-    /** Sync buttons are active only when there is something to send and the watch would accept it. */
+    /**
+     * Sync and delete buttons are active only when there is something on the watch and it would
+     * accept the command: not during a match there, and not while a sync is running.
+     */
     val canSync: Boolean
         get() = watch is WatchQueue.Known &&
             !watch.summary.matchInProgress &&
@@ -56,6 +59,9 @@ class SyncViewModel(
 
     /** Syncs one match, or all pending ones when [matchId] is null. */
     fun sync(matchId: String? = null) = phoneSync.start(matchId)
+
+    /** Deletes what is still queued on the watch for [matchId]. */
+    fun deleteMatch(matchId: String) = phoneSync.deleteMatch(matchId)
 
     companion object {
         fun factory(app: Application): ViewModelProvider.Factory = viewModelFactory {

@@ -22,6 +22,7 @@ import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.shared.sync.Ack
 import pl.net.orlik.shared.sync.DataLayerPaths
+import pl.net.orlik.shared.sync.DeleteMatch
 import pl.net.orlik.shared.sync.EventMetadata
 import pl.net.orlik.shared.sync.SyncCodec
 import pl.net.orlik.shared.sync.SyncRequest
@@ -79,20 +80,39 @@ class PhoneSync private constructor(context: Context) {
         if (_status.value is SyncStatus.Running) return
         _status.value = SyncStatus.Running(received = 0)
         scope.launch {
-            try {
-                val watch = nodeClient.connectedNodes.await().let { nodes -> nodes.firstOrNull { it.isNearby } ?: nodes.firstOrNull() }
-                if (watch == null) {
-                    _status.value = SyncStatus.WatchUnavailable
-                    return@launch
-                }
+            val sent = sendToWatch(DataLayerPaths.SYNC_REQUEST, SyncCodec.encode(SyncRequest(matchId))) {
                 restartWatchdog()
-                messageClient.sendMessage(watch.id, DataLayerPaths.SYNC_REQUEST, SyncCodec.encode(SyncRequest(matchId))).await()
-            } catch (e: Exception) {
-                Log.w(TAG, "Sync request failed", e)
-                finish(SyncStatus.WatchUnavailable)
+            }
+            if (!sent) finish(SyncStatus.WatchUnavailable)
+        }
+    }
+
+    /**
+     * Asks the watch to delete a match's events and recordings still queued there; what the phone
+     * already has stays. The match leaving the queue summary confirms the deletion.
+     */
+    fun deleteMatch(matchId: String) {
+        scope.launch {
+            if (!sendToWatch(DataLayerPaths.DELETE_MATCH, SyncCodec.encode(DeleteMatch(matchId)))) {
+                _status.value = SyncStatus.WatchUnavailable
             }
         }
     }
+
+    /** Sends a message to the watch; false when no watch is connected or sending failed. */
+    private suspend fun sendToWatch(path: String, payload: ByteArray, beforeSend: () -> Unit = {}): Boolean =
+        try {
+            val nodes = nodeClient.connectedNodes.await()
+            val watch = nodes.firstOrNull { it.isNearby } ?: nodes.firstOrNull()
+            if (watch != null) {
+                beforeSend()
+                messageClient.sendMessage(watch.id, path, payload).await()
+            }
+            watch != null
+        } catch (e: Exception) {
+            Log.w(TAG, "Message $path not sent", e)
+            false
+        }
 
     private fun onMessage(event: MessageEvent) {
         when (event.path) {

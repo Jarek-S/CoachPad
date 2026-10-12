@@ -5,6 +5,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import pl.net.orlik.data.MatchRepository
 import pl.net.orlik.shared.sync.Ack
+import pl.net.orlik.shared.sync.DeleteMatch
 import pl.net.orlik.shared.sync.EventMetadata
 import pl.net.orlik.shared.sync.SyncRejected
 import pl.net.orlik.shared.sync.SyncRequest
@@ -18,9 +19,9 @@ interface SyncTransport {
 }
 
 /**
- * Sends the queue to the phone one event at a time. Nothing waits on the watch: a request sends
- * the oldest event, and each ACK removes that event and sends the next one. When no ACK arrives
- * the sync simply stops and the phone reports the timeout.
+ * Carries out the phone's commands on the queue. Sync sends it one event at a time and nothing
+ * waits on the watch: a request sends the oldest event, and each ACK removes that event and sends
+ * the next one. When no ACK arrives the sync simply stops and the phone reports the timeout.
  */
 class SyncSender(
     private val repository: MatchRepository,
@@ -40,6 +41,13 @@ class SyncSender(
     suspend fun onAck(phone: String, ack: Ack) = mutex.withLock {
         repository.removeSynced(ack.eventId)?.audioFileRef?.let { File(recordingsDir, it).delete() }
         sendNext(phone)
+    }
+
+    /** Deletes a match's queued events and recordings; the republished summary confirms it. */
+    suspend fun onDeleteMatch(command: DeleteMatch) = mutex.withLock {
+        repository.deleteMatch(command.matchId).forEach { event ->
+            event.audioFileRef?.let { File(recordingsDir, it).delete() }
+        }
     }
 
     private suspend fun sendNext(phone: String) {

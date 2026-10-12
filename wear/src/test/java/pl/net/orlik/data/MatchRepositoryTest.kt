@@ -218,6 +218,15 @@ class MatchRepositoryTest {
     }
 
     @Test
+    fun deleteMatch_republishesSummary() = runBlocking {
+        val match = repository.startMatch()
+        repository.endMatch(match)
+
+        assertEquals(2, repository.deleteMatch(match.matchId).size)
+        assertEquals(QueueSummary(false, emptyList()), published.last())
+    }
+
+    @Test
     fun emptyQueue_noActiveMatch() = runBlocking {
         assertNull(repository.findActiveMatch())
     }

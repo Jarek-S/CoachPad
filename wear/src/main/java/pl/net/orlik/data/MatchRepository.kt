@@ -111,6 +111,19 @@ class MatchRepository(
         return event
     }
 
+    /**
+     * Deletes the queued events of [matchId] on the phone's request and republishes the summary,
+     * which tells the phone it is done. Returns the deleted events (their audio files are the
+     * caller's to delete). A match in progress is never deleted.
+     */
+    suspend fun deleteMatch(matchId: String): List<MatchEvent> {
+        if (findActiveMatch()?.matchId == matchId) return emptyList()
+        val events = dao.getByMatch(matchId)
+        dao.deleteByMatch(matchId)
+        publishQueueSummary()
+        return events
+    }
+
     /** Publishes the current queue summary; called after every queue change and at app start. */
     suspend fun publishQueueSummary() {
         queuePublisher.publish(queueSummaryOf(dao.getPending()))

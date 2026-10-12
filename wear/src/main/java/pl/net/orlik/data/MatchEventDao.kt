@@ -27,6 +27,9 @@ interface MatchEventDao {
     @Query("DELETE FROM match_events WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    @Query("DELETE FROM match_events WHERE match_id = :matchId")
+    suspend fun deleteByMatch(matchId: String)
+
     /** Match id of the most recently started match, or null if the queue has none. */
     @Query("SELECT match_id FROM match_events WHERE type = 'MATCH_START' ORDER BY recorded_at DESC LIMIT 1")
     suspend fun getLatestStartedMatchId(): String?

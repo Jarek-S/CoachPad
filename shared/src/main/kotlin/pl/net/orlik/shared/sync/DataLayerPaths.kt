@@ -18,8 +18,8 @@ object DataLayerPaths {
     /** Phone → watch, [Ack]; the watch then removes the event and sends the next one. */
     const val ACK = "/sync/ack"
 
-    /** Phone → watch, [DeleteMatch]. */
-    const val DELETE_MATCH = "/match/delete"
+    /** Phone → watch, [DeleteMatch]; under /sync so the watch's listener service receives it too. */
+    const val DELETE_MATCH = "/sync/delete-match"
 
     /** Watch DataItem holding the [QueueSummary]. */
     const val QUEUE_SUMMARY = "/queue/summary"

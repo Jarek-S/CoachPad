@@ -14,6 +14,7 @@ import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.MatchRepository
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.sync.Ack
+import pl.net.orlik.shared.sync.DeleteMatch
 import pl.net.orlik.shared.sync.EventMetadata
 import pl.net.orlik.shared.sync.SyncRejected
 import pl.net.orlik.shared.sync.SyncRequest
@@ -113,6 +114,28 @@ class SyncSenderTest {
         sender.onAck(PHONE, Ack("m1-start"))
 
         assertTrue(transport.sent.isEmpty())
+        assertEquals(1, dao.events.size)
+    }
+
+    @Test
+    fun deleteMatch_removesItsEventsAndRecordings_only() = runBlocking {
+        endedMatch("m1", at = 1_000)
+        endedMatch("m2", at = 5_000)
+        dao.insert(MatchEvent("r1", "m1", 1_500, type = null, audioFileRef = "r1.m4a"))
+        val file = File(recordingsDir, "r1.m4a").apply { writeText("audio") }
+
+        sender.onDeleteMatch(DeleteMatch("m1"))
+
+        assertEquals(setOf("m2"), dao.events.map { it.matchId }.toSet())
+        assertFalse(file.exists())
+    }
+
+    @Test
+    fun deleteMatch_neverDeletesMatchInProgress() = runBlocking {
+        dao.insert(MatchEvent("m1-start", "m1", 1_000, EventType.MATCH_START, audioFileRef = null))
+
+        sender.onDeleteMatch(DeleteMatch("m1"))
+
         assertEquals(1, dao.events.size)
     }
 

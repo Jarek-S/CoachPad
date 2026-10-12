@@ -46,6 +46,10 @@ internal class FakeDao : MatchEventDao {
         events.removeAll { it.id == id }
     }
 
+    override suspend fun deleteByMatch(matchId: String) {
+        events.removeAll { it.matchId == matchId }
+    }
+
     override suspend fun getLatestStartedMatchId() =
         events.filter { it.type == EventType.MATCH_START }.maxByOrNull { it.recordedAt }?.matchId
 }
