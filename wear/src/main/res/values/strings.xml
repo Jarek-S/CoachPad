@@ -10,6 +10,7 @@
     <!-- Notification of the shift timer service -->
     <string name="match_channel">Mecz</string>
     <string name="match_in_progress">Mecz w toku</string>
+    <string name="shift_alarm_channel">Alarm zmiany</string>
     <!-- Labels under the small round buttons -->
     <string name="pause_label">pauza</string>
     <string name="resume_label">wznów</string>

@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <uses-feature android:name="android.hardware.type.watch" />
     <uses-feature android:name="android.hardware.microphone" />
@@ -44,14 +45,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Shift timer alarm during a match, see ShiftAlarmService -->
+        <!-- Runs during a match: keeps the match screen on top and the shift timer alarm, see MatchService -->
         <service
-            android:name=".timer.ShiftAlarmService"
+            android:name=".service.MatchService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Repeating substitution reminder during a sports match" />
+                android:value="Keeps a sports match screen on top and repeats substitution reminders during the match" />
         </service>
     </application>
 

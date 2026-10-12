@@ -18,8 +18,8 @@ import pl.net.orlik.data.MatchRepository
 import pl.net.orlik.data.VoiceRecording
 import pl.net.orlik.data.matchRepository
 import pl.net.orlik.recording.AudioRecorder
-import pl.net.orlik.timer.ServiceShiftAlarm
-import pl.net.orlik.timer.ShiftAlarm
+import pl.net.orlik.service.AndroidMatchServiceControl
+import pl.net.orlik.service.MatchServiceControl
 
 sealed interface MatchUiState {
     /** Reading the queue to find a match in progress. */
@@ -32,7 +32,7 @@ class MatchViewModel(
     private val repository: MatchRepository,
     private val recorder: AudioRecorder,
     private val recordingsDir: File,
-    private val shiftAlarm: ShiftAlarm,
+    private val matchService: MatchServiceControl,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<MatchUiState>(MatchUiState.Loading)
@@ -45,7 +45,7 @@ class MatchViewModel(
         viewModelScope.launch {
             val active = repository.findActiveMatch()
             _state.value = if (active != null) MatchUiState.InProgress(active) else MatchUiState.NoMatch
-            shiftAlarm.update(active)
+            matchService.update(active)
         }
     }
 
@@ -56,7 +56,7 @@ class MatchViewModel(
         viewModelScope.launch {
             val match = repository.startMatch()
             _state.value = MatchUiState.InProgress(match)
-            shiftAlarm.update(match)
+            matchService.update(match)
         }
     }
 
@@ -67,7 +67,7 @@ class MatchViewModel(
         pauseJob = viewModelScope.launch {
             val updated = if (match.isPaused) repository.resumeMatch(match) else repository.pauseMatch(match)
             updateInProgress { it.copy(match = updated) }
-            shiftAlarm.update(updated)
+            matchService.update(updated)
         }
     }
 
@@ -77,7 +77,7 @@ class MatchViewModel(
         val confirmed = repository.confirmShift(match)
         if (confirmed == match) return
         updateInProgress { it.copy(match = confirmed) }
-        shiftAlarm.update(confirmed)
+        matchService.update(confirmed)
     }
 
     fun toggleRecording() {
@@ -106,7 +106,7 @@ class MatchViewModel(
             saving?.join()
             repository.endMatch(current.match)
             _state.value = MatchUiState.NoMatch
-            shiftAlarm.update(null)
+            matchService.update(null)
         }
     }
 
@@ -139,7 +139,7 @@ class MatchViewModel(
                     repository = matchRepository(app),
                     recorder = AudioRecorder(app),
                     recordingsDir = File(app.filesDir, "recordings"),
-                    shiftAlarm = ServiceShiftAlarm(app),
+                    matchService = AndroidMatchServiceControl(app),
                 )
             }
         }

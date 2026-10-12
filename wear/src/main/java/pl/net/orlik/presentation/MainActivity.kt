@@ -2,6 +2,7 @@ package pl.net.orlik.presentation
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,9 +29,30 @@ import pl.net.orlik.settings.SettingsViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        turnScreenOnIfAsked(intent)
         setContent {
             WearApp()
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        turnScreenOnIfAsked(intent)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Only the alarm turns the screen on; a normal return to the app must not
+        setTurnScreenOn(false)
+    }
+
+    /** The shift timer alarm opens this screen with the screen off. */
+    private fun turnScreenOnIfAsked(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_TURN_SCREEN_ON, false)) setTurnScreenOn(true)
+    }
+
+    companion object {
+        const val EXTRA_TURN_SCREEN_ON = "turn_screen_on"
     }
 }
 
@@ -66,7 +88,7 @@ private fun MatchRoute(
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) viewModel.toggleRecording()
     }
-    // Asked once, before the first match: shows the notification of the shift timer service.
+    // Asked once, before the first match: shows the notification of the match service.
     // The match starts either way; without permission the service runs with a hidden notification.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         viewModel.startMatch()
