@@ -6,8 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import pl.net.orlik.data.ReceivedEvent
-import pl.net.orlik.data.ReceivedEventDao
+import pl.net.orlik.data.Match
+import pl.net.orlik.data.MatchEvent
+import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.shared.sync.EventMetadata
 
 /**
@@ -16,7 +17,7 @@ import pl.net.orlik.shared.sync.EventMetadata
  * audio travel separately and either may arrive first.
  */
 class EventReceiver(
-    private val dao: ReceivedEventDao,
+    private val dao: MatchEventDao,
     private val recordingsDir: File,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
@@ -56,8 +57,9 @@ class EventReceiver(
     }
 
     private suspend fun store(metadata: EventMetadata) {
+        dao.insertMatch(Match(metadata.matchId))
         dao.insert(
-            ReceivedEvent(
+            MatchEvent(
                 id = metadata.id,
                 matchId = metadata.matchId,
                 recordedAt = metadata.recordedAt,

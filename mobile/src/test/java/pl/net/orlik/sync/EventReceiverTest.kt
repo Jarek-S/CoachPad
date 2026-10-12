@@ -10,8 +10,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import pl.net.orlik.data.ReceivedEvent
-import pl.net.orlik.data.ReceivedEventDao
+import pl.net.orlik.data.Match
+import pl.net.orlik.data.MatchEvent
+import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.sync.EventMetadata
 
@@ -28,7 +30,11 @@ class EventReceiverTest {
     fun structuralEvent_isStoredAndAcked() = runBlocking {
         assertTrue(receiver.onMetadata(start))
 
-        assertEquals(ReceivedEvent("e1", "m1", 1_000, EventType.MATCH_START, null, 9_000), dao.events.single())
+        val stored = dao.events.single()
+        assertEquals(MatchEvent("e1", "m1", 1_000, EventType.MATCH_START, null, 9_000), stored)
+        // Structural events need no review
+        assertEquals(ReviewStatus.CONFIRMED, stored.status)
+        assertEquals(listOf(Match("m1")), dao.matches)
     }
 
     @Test
@@ -39,6 +45,7 @@ class EventReceiverTest {
         assertTrue(receiver.onAudio("r1", "audio".byteInputStream()))
 
         assertEquals("r1.m4a", dao.events.single().audioFileRef)
+        assertEquals(ReviewStatus.TO_REVIEW, dao.events.single().status)
         assertEquals("audio", File(recordingsDir, "r1.m4a").readText())
     }
 
@@ -83,11 +90,16 @@ class EventReceiverTest {
         assertNull(dao.events.firstOrNull())
     }
 
-    private class FakeDao : ReceivedEventDao {
-        val events = mutableListOf<ReceivedEvent>()
+    private class FakeDao : MatchEventDao {
+        val events = mutableListOf<MatchEvent>()
+        val matches = mutableListOf<Match>()
 
-        override suspend fun insert(event: ReceivedEvent) {
+        override suspend fun insert(event: MatchEvent) {
             if (events.none { it.id == event.id }) events += event
+        }
+
+        override suspend fun insertMatch(match: Match) {
+            if (matches.none { it.id == match.id }) matches += match
         }
 
         override suspend fun exists(id: String) = events.any { it.id == id }

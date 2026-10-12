@@ -49,7 +49,7 @@ class PhoneSync private constructor(context: Context) {
     private val messageClient = Wearable.getMessageClient(context)
     private val channelClient = Wearable.getChannelClient(context)
     private val nodeClient = Wearable.getNodeClient(context)
-    private val receiver = EventReceiver(PhoneDatabase.get(context).receivedEventDao(), recordingsDir(context))
+    private val receiver = EventReceiver(PhoneDatabase.get(context).matchEventDao(), recordingsDir(context))
     // A failure is only logged: no ACK goes out, the watch keeps the event and the watchdog reports it
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.w(TAG, "Sync step failed", e) },

@@ -68,7 +68,7 @@ class SyncViewModel(
             initializer {
                 SyncViewModel(
                     summaries = QueueSummarySource(app).summaries,
-                    eventsOnPhone = PhoneDatabase.get(app).receivedEventDao().count(),
+                    eventsOnPhone = PhoneDatabase.get(app).matchEventDao().count(),
                     phoneSync = PhoneSync.get(app),
                 )
             }

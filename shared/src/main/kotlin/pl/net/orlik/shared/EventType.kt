@@ -18,7 +18,10 @@ enum class EventType {
     GOAL,
     GOAL_DISALLOWED,
     YELLOW_CARD,
-    RED_CARD;
+    RED_CARD,
+
+    /** Anything else worth keeping (a substitution, a tactical remark); no effect on score or stats. */
+    NOTE;
 
     val isStructural: Boolean
         get() = this in STRUCTURAL
