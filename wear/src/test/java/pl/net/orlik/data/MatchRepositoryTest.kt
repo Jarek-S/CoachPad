@@ -10,6 +10,8 @@ import pl.net.orlik.settings.SettingsStore
 import pl.net.orlik.settings.ShiftTimerSettings
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.Pause
+import pl.net.orlik.shared.sync.PendingMatch
+import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.timer.ShiftTimer
 
 class MatchRepositoryTest {
@@ -17,9 +19,11 @@ class MatchRepositoryTest {
     private val dao = FakeDao()
     private val settings = FakeSettings()
     private val timerStore = FakeTimerStore()
+    private val published = mutableListOf<QueueSummary>()
+    private val publisher = QueueSummaryPublisher { published += it }
     private val repository = repository { 1_000 }
 
-    private fun repository(clock: () -> Long) = MatchRepository(dao, settings, timerStore, clock)
+    private fun repository(clock: () -> Long) = MatchRepository(dao, settings, timerStore, publisher, clock)
 
     @Test
     fun startMatch_recordsMatchStart() = runBlocking {
@@ -37,7 +41,7 @@ class MatchRepositoryTest {
         val started = repository.startMatch()
 
         // A new repository over the same data simulates an app restart
-        assertEquals(started, MatchRepository(dao, settings, timerStore).findActiveMatch())
+        assertEquals(started, MatchRepository(dao, settings, timerStore, publisher).findActiveMatch())
     }
 
     @Test
@@ -123,7 +127,7 @@ class MatchRepositoryTest {
 
         // Settings changed during the match must not affect it
         settings.current = ShiftTimerSettings(enabled = false)
-        assertEquals(started, MatchRepository(dao, settings, timerStore).findActiveMatch())
+        assertEquals(started, MatchRepository(dao, settings, timerStore, publisher).findActiveMatch())
     }
 
     @Test
@@ -146,7 +150,7 @@ class MatchRepositoryTest {
         val confirmed = repository.confirmShift(started)
 
         assertEquals(ShiftTimer(intervalMillis = 5 * 60_000L, lastResetPlayMillis = 6 * 60_000L), confirmed.shiftTimer)
-        assertEquals(confirmed, MatchRepository(dao, settings, timerStore).findActiveMatch())
+        assertEquals(confirmed, MatchRepository(dao, settings, timerStore, publisher).findActiveMatch())
     }
 
     @Test
@@ -183,6 +187,35 @@ class MatchRepositoryTest {
         repository.endMatch(match)
 
         assertNull(timerStore.load(match.matchId))
+    }
+
+    @Test
+    fun everyQueueChange_publishesSummary() = runBlocking {
+        var now = 1_000L
+        val repository = repository { now }
+        val match = repository.startMatch()
+        assertEquals(QueueSummary(true, listOf(PendingMatch(match.matchId, 1_000, 1, 0))), published.last())
+
+        now = 2_000
+        repository.saveVoiceRecording(repository.newVoiceRecording(match))
+        val paused = repository.pauseMatch(match)
+        repository.endMatch(paused)
+
+        assertEquals(4, published.size)
+        assertEquals(QueueSummary(false, listOf(PendingMatch(match.matchId, 1_000, 4, 1))), published.last())
+    }
+
+    @Test
+    fun confirmShift_doesNotPublish() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 6 * 60_000L
+        repository.confirmShift(started)
+        // The timer lives outside the queue, so the summary does not change
+        assertEquals(1, published.size)
     }
 
     @Test

@@ -26,7 +26,7 @@ class SyncMessagesTest {
     fun queueSummary_roundTrips() {
         val summary = QueueSummary(
             matchInProgress = true,
-            matches = listOf(PendingMatch("m1", 1_000, 12), PendingMatch("m2", 9_000, 3)),
+            matches = listOf(PendingMatch("m1", 1_000, 14, 12), PendingMatch("m2", 9_000, 3, 1)),
         )
         assertEquals(summary, SyncCodec.decode<QueueSummary>(SyncCodec.encode(summary)))
     }

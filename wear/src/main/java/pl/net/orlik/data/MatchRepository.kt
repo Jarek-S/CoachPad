@@ -6,11 +6,12 @@ import pl.net.orlik.settings.SettingsStore
 import pl.net.orlik.shared.Pause
 import pl.net.orlik.shared.playTimeMillis
 
-/** Records match lifecycle events in the watch queue. */
+/** Records match lifecycle events in the watch queue and keeps the phone's view of the queue current. */
 class MatchRepository(
     private val dao: MatchEventDao,
     private val settings: SettingsStore,
     private val timerStore: MatchTimerStore,
+    private val queuePublisher: QueueSummaryPublisher,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -34,7 +35,7 @@ class MatchRepository(
             startedAt = clock(),
             shiftTimer = settings.shiftTimerSettings().toShiftTimerOrNull(),
         )
-        dao.insert(structuralEvent(match.matchId, EventType.MATCH_START, match.startedAt))
+        insert(structuralEvent(match.matchId, EventType.MATCH_START, match.startedAt))
         timerStore.save(match.matchId, match.shiftTimer)
         return match
     }
@@ -42,14 +43,14 @@ class MatchRepository(
     /** Pauses [match] by recording MATCH_PAUSE; returns the updated match. */
     suspend fun pauseMatch(match: ActiveMatch): ActiveMatch {
         val at = clock()
-        dao.insert(structuralEvent(match.matchId, EventType.MATCH_PAUSE, at))
+        insert(structuralEvent(match.matchId, EventType.MATCH_PAUSE, at))
         return match.copy(pauses = match.pauses + Pause(pausedAt = at))
     }
 
     /** Resumes paused [match] by recording MATCH_RESUME; returns the updated match. */
     suspend fun resumeMatch(match: ActiveMatch): ActiveMatch {
         val at = clock()
-        dao.insert(structuralEvent(match.matchId, EventType.MATCH_RESUME, at))
+        insert(structuralEvent(match.matchId, EventType.MATCH_RESUME, at))
         return match.copy(pauses = match.pauses.dropLast(1) + match.pauses.last().copy(resumedAt = at))
     }
 
@@ -79,7 +80,7 @@ class MatchRepository(
 
     /** Queues a finished recording as an event; its type is set later on the phone. */
     suspend fun saveVoiceRecording(recording: VoiceRecording) {
-        dao.insert(
+        insert(
             MatchEvent(
                 id = recording.eventId,
                 matchId = recording.matchId,
@@ -92,8 +93,18 @@ class MatchRepository(
 
     /** Ends [match] by recording MATCH_END. Allowed during a pause too. */
     suspend fun endMatch(match: ActiveMatch) {
-        dao.insert(structuralEvent(match.matchId, EventType.MATCH_END, clock()))
+        insert(structuralEvent(match.matchId, EventType.MATCH_END, clock()))
         timerStore.clear()
+    }
+
+    /** Publishes the current queue summary; called after every queue change and at app start. */
+    suspend fun publishQueueSummary() {
+        queuePublisher.publish(queueSummaryOf(dao.getPending()))
+    }
+
+    private suspend fun insert(event: MatchEvent) {
+        dao.insert(event)
+        publishQueueSummary()
     }
 
     private fun structuralEvent(matchId: String, type: EventType, at: Long) = MatchEvent(

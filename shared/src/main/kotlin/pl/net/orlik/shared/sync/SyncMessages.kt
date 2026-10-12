@@ -50,7 +50,10 @@ data class PendingMatch(
     val matchId: String,
     /** Time of MATCH_START, or of the oldest queued event if MATCH_START was already synced. */
     val startedAt: Long,
+    /** All queued events of the match, structural ones included — what a sync will send. */
     val eventCount: Int,
+    /** Queued voice recordings only — what the user thinks of as the match's events. */
+    val recordingCount: Int,
 )
 
 /** JSON encoding of the messages; unknown fields are ignored so either side can add fields later. */

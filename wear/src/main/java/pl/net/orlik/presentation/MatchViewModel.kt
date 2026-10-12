@@ -46,6 +46,8 @@ class MatchViewModel(
             val active = repository.findActiveMatch()
             _state.value = if (active != null) MatchUiState.InProgress(active) else MatchUiState.NoMatch
             matchService.update(active)
+            // Republish in case the last change was not delivered to the Data Layer
+            repository.publishQueueSummary()
         }
     }
 
