@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // Pure Kotlin/JVM module — no Android dependencies, shared by :wear and :mobile.
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 java {
@@ -17,5 +18,7 @@ kotlin {
 }
 
 dependencies {
+    // api: :wear and :mobile use the message classes (and their serializers) directly
+    api(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }
