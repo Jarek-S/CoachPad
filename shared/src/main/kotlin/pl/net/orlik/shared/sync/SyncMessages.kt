@@ -30,6 +30,10 @@ data class EventMetadata(
     val hasAudio: Boolean,
 )
 
+/** No queued events left in the requested scope. */
+@Serializable
+data object SyncDone
+
 /** Sent by the phone once the event (and its audio, if any) is stored; also for duplicates. */
 @Serializable
 data class Ack(val eventId: String)

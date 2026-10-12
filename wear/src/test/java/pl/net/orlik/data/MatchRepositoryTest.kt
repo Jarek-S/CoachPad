@@ -6,7 +6,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import pl.net.orlik.settings.SettingsStore
 import pl.net.orlik.settings.ShiftTimerSettings
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.Pause
@@ -221,41 +220,5 @@ class MatchRepositoryTest {
     @Test
     fun emptyQueue_noActiveMatch() = runBlocking {
         assertNull(repository.findActiveMatch())
-    }
-
-    private class FakeSettings : SettingsStore {
-        var current = ShiftTimerSettings()
-        override fun shiftTimerSettings() = current
-        override fun saveShiftTimerSettings(settings: ShiftTimerSettings) {
-            current = settings
-        }
-    }
-
-    private class FakeTimerStore : MatchTimerStore {
-        private var saved: Pair<String, ShiftTimer?>? = null
-        override fun load(matchId: String) = saved?.takeIf { it.first == matchId }?.second
-        override fun save(matchId: String, timer: ShiftTimer?) {
-            saved = matchId to timer
-        }
-        override fun clear() {
-            saved = null
-        }
-    }
-
-    /** In-memory DAO: enough to test repository logic without Room or a device. */
-    private class FakeDao : MatchEventDao {
-        val events = mutableListOf<MatchEvent>()
-
-        override suspend fun insert(event: MatchEvent) {
-            events += event
-        }
-
-        override suspend fun getByMatch(matchId: String) =
-            events.filter { it.matchId == matchId }.sortedBy { it.recordedAt }
-
-        override suspend fun getPending() = events.sortedBy { it.recordedAt }
-
-        override suspend fun getLatestStartedMatchId() =
-            events.filter { it.type == EventType.MATCH_START }.maxByOrNull { it.recordedAt }?.matchId
     }
 }

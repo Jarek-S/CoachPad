@@ -36,6 +36,7 @@ class SyncMessagesTest {
         val rejected = SyncRejected(SyncRejected.Reason.MATCH_IN_PROGRESS)
         assertEquals(rejected, SyncCodec.decode<SyncRejected>(SyncCodec.encode(rejected)))
         assertEquals(Ack("e1"), SyncCodec.decode<Ack>(SyncCodec.encode(Ack("e1"))))
+        assertEquals(SyncDone, SyncCodec.decode<SyncDone>(SyncCodec.encode(SyncDone)))
         assertEquals(DeleteMatch("m1"), SyncCodec.decode<DeleteMatch>(SyncCodec.encode(DeleteMatch("m1"))))
     }
 

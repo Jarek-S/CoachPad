@@ -12,7 +12,10 @@ object DataLayerPaths {
     /** Watch → phone, [EventMetadata]; one message per event. */
     const val EVENT = "/sync/event"
 
-    /** Phone → watch, [Ack]. */
+    /** Watch → phone, [SyncDone]: nothing left to send in the requested scope. */
+    const val SYNC_DONE = "/sync/done"
+
+    /** Phone → watch, [Ack]; the watch then removes the event and sends the next one. */
     const val ACK = "/sync/ack"
 
     /** Phone → watch, [DeleteMatch]. */

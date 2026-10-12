@@ -1,6 +1,7 @@
 package pl.net.orlik.data
 
 import android.content.Context
+import java.io.File
 import pl.net.orlik.settings.PreferencesSettingsStore
 import pl.net.orlik.sync.DataLayerQueueSummaryPublisher
 
@@ -14,3 +15,6 @@ fun matchRepository(context: Context): MatchRepository {
         queuePublisher = DataLayerQueueSummaryPublisher(app),
     )
 }
+
+/** Where voice recordings are stored; [MatchEvent.audioFileRef] is relative to it. */
+fun recordingsDir(context: Context): File = File(context.applicationContext.filesDir, "recordings")

@@ -17,6 +17,7 @@ import pl.net.orlik.data.ActiveMatch
 import pl.net.orlik.data.MatchRepository
 import pl.net.orlik.data.VoiceRecording
 import pl.net.orlik.data.matchRepository
+import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.recording.AudioRecorder
 import pl.net.orlik.service.AndroidMatchServiceControl
 import pl.net.orlik.service.MatchServiceControl
@@ -140,7 +141,7 @@ class MatchViewModel(
                 MatchViewModel(
                     repository = matchRepository(app),
                     recorder = AudioRecorder(app),
-                    recordingsDir = File(app.filesDir, "recordings"),
+                    recordingsDir = recordingsDir(app),
                     matchService = AndroidMatchServiceControl(app),
                 )
             }

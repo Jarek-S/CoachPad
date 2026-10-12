@@ -97,6 +97,20 @@ class MatchRepository(
         timerStore.clear()
     }
 
+    /** The next event to sync: the oldest queued one of [matchId], or of any match when null. */
+    suspend fun nextToSync(matchId: String?): MatchEvent? = dao.getOldestPending(matchId)
+
+    /**
+     * Removes an event the phone has acknowledged and republishes the summary. Returns the removed
+     * event (its audio file is the caller's to delete), or null if it was no longer queued.
+     */
+    suspend fun removeSynced(eventId: String): MatchEvent? {
+        val event = dao.getById(eventId) ?: return null
+        dao.deleteById(eventId)
+        publishQueueSummary()
+        return event
+    }
+
     /** Publishes the current queue summary; called after every queue change and at app start. */
     suspend fun publishQueueSummary() {
         queuePublisher.publish(queueSummaryOf(dao.getPending()))

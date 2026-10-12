@@ -5,6 +5,14 @@
     <string name="no_watch_data">Brak danych z zegarka. Uruchom aplikację na zegarku.</string>
     <string name="no_pending_matches">Brak zaległych meczów.</string>
     <string name="match_in_progress_on_watch">Mecz w toku na zegarku</string>
+    <string name="events_on_phone">Zdarzenia na telefonie: %d</string>
+    <string name="sync">Synchronizuj</string>
+    <string name="sync_all">Synchronizuj wszystko</string>
+    <string name="sync_running">Synchronizacja… odebrano: %d</string>
+    <string name="sync_done">Synchronizacja zakończona, odebrano: %d</string>
+    <string name="sync_rejected">Zegarek odrzucił synchronizację: mecz w toku</string>
+    <string name="sync_watch_unavailable">Zegarek niedostępny</string>
+    <string name="sync_no_response">Zegarek przestał odpowiadać. Dane zostały na zegarku — spróbuj ponownie.</string>
 
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>
