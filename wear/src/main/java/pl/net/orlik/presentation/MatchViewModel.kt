@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pl.net.orlik.data.ActiveMatch
-import pl.net.orlik.data.AppDatabase
 import pl.net.orlik.data.MatchRepository
-import pl.net.orlik.data.PreferencesMatchTimerStore
 import pl.net.orlik.data.VoiceRecording
+import pl.net.orlik.data.matchRepository
 import pl.net.orlik.recording.AudioRecorder
-import pl.net.orlik.settings.PreferencesSettingsStore
+import pl.net.orlik.timer.ServiceShiftAlarm
+import pl.net.orlik.timer.ShiftAlarm
 
 sealed interface MatchUiState {
     /** Reading the queue to find a match in progress. */
@@ -32,6 +32,7 @@ class MatchViewModel(
     private val repository: MatchRepository,
     private val recorder: AudioRecorder,
     private val recordingsDir: File,
+    private val shiftAlarm: ShiftAlarm,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<MatchUiState>(MatchUiState.Loading)
@@ -44,6 +45,7 @@ class MatchViewModel(
         viewModelScope.launch {
             val active = repository.findActiveMatch()
             _state.value = if (active != null) MatchUiState.InProgress(active) else MatchUiState.NoMatch
+            shiftAlarm.update(active)
         }
     }
 
@@ -52,7 +54,9 @@ class MatchViewModel(
         if (_state.value != MatchUiState.NoMatch) return
         _state.value = MatchUiState.Loading
         viewModelScope.launch {
-            _state.value = MatchUiState.InProgress(repository.startMatch())
+            val match = repository.startMatch()
+            _state.value = MatchUiState.InProgress(match)
+            shiftAlarm.update(match)
         }
     }
 
@@ -63,12 +67,17 @@ class MatchViewModel(
         pauseJob = viewModelScope.launch {
             val updated = if (match.isPaused) repository.resumeMatch(match) else repository.pauseMatch(match)
             updateInProgress { it.copy(match = updated) }
+            shiftAlarm.update(updated)
         }
     }
 
     /** Confirms the substitution when the shift timer alarm is on; ignored otherwise. */
     fun confirmShift() {
-        updateInProgress { it.copy(match = repository.confirmShift(it.match)) }
+        val match = (_state.value as? MatchUiState.InProgress)?.match ?: return
+        val confirmed = repository.confirmShift(match)
+        if (confirmed == match) return
+        updateInProgress { it.copy(match = confirmed) }
+        shiftAlarm.update(confirmed)
     }
 
     fun toggleRecording() {
@@ -97,6 +106,7 @@ class MatchViewModel(
             saving?.join()
             repository.endMatch(current.match)
             _state.value = MatchUiState.NoMatch
+            shiftAlarm.update(null)
         }
     }
 
@@ -126,13 +136,10 @@ class MatchViewModel(
             initializer {
                 val app = this[APPLICATION_KEY]!!
                 MatchViewModel(
-                    repository = MatchRepository(
-                        dao = AppDatabase.get(app).matchEventDao(),
-                        settings = PreferencesSettingsStore(app),
-                        timerStore = PreferencesMatchTimerStore(app),
-                    ),
+                    repository = matchRepository(app),
                     recorder = AudioRecorder(app),
                     recordingsDir = File(app.filesDir, "recordings"),
+                    shiftAlarm = ServiceShiftAlarm(app),
                 )
             }
         }

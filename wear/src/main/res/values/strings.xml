@@ -7,6 +7,9 @@
     <string name="record">Nagraj</string>
     <string name="stop_recording">Zatrzymaj nagranie</string>
     <string name="confirm_shift">Potwierdź zmianę</string>
+    <!-- Notification of the shift timer service -->
+    <string name="match_channel">Mecz</string>
+    <string name="match_in_progress">Mecz w toku</string>
     <!-- Labels under the small round buttons -->
     <string name="pause_label">pauza</string>
     <string name="resume_label">wznów</string>

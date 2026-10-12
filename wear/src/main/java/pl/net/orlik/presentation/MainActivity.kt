@@ -2,6 +2,7 @@ package pl.net.orlik.presentation
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -65,6 +66,11 @@ private fun MatchRoute(
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) viewModel.toggleRecording()
     }
+    // Asked once, before the first match: shows the notification of the shift timer service.
+    // The match starts either way; without permission the service runs with a hidden notification.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.startMatch()
+    }
     // Leaving the screen ends a recording in progress (background apps get a muted microphone)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopRecording() }
 
@@ -74,7 +80,12 @@ private fun MatchRoute(
     ) {
         MatchScreen(
             state = state,
-            onStartMatch = viewModel::startMatch,
+            onStartMatch = {
+                val needsPermission = Build.VERSION.SDK_INT >= 33 &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED
+                if (needsPermission) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else viewModel.startMatch()
+            },
             onOpenSettings = onOpenSettings,
             onConfirmShift = viewModel::confirmShift,
             onToggleRecording = {
