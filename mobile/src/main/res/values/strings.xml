@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">MatchNotes</string>
+    <string name="pending_title">Oczekują na synchronizację</string>
+    <string name="loading">Wczytywanie…</string>
+    <string name="no_watch_data">Brak danych z zegarka. Uruchom aplikację na zegarku.</string>
+    <string name="no_pending_matches">Brak zaległych meczów.</string>
+    <string name="match_in_progress_on_watch">Mecz w toku na zegarku</string>
+
+    <plurals name="recordings">
+        <item quantity="one">%d nagranie</item>
+        <item quantity="few">%d nagrania</item>
+        <item quantity="many">%d nagrań</item>
+        <item quantity="other">%d nagrania</item>
+    </plurals>
+    <plurals name="events">
+        <item quantity="one">%d zdarzenie</item>
+        <item quantity="few">%d zdarzenia</item>
+        <item quantity="many">%d zdarzeń</item>
+        <item quantity="other">%d zdarzenia</item>
+    </plurals>
 </resources>
