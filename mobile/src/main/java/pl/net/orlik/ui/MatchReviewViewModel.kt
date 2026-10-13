@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pl.net.orlik.audio.AudioDurations
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.Match
@@ -20,6 +21,7 @@ import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.matchReviewOf
+import pl.net.orlik.review.teamNameOf
 
 data class MatchReviewUiState(
     val match: Match? = null,
@@ -33,8 +35,8 @@ data class MatchReviewUiState(
 )
 
 class MatchReviewViewModel(
-    matchId: String,
-    dao: MatchEventDao,
+    private val matchId: String,
+    private val dao: MatchEventDao,
     private val recordingsDir: File,
 ) : ViewModel() {
 
@@ -70,6 +72,11 @@ class MatchReviewViewModel(
     }
 
     fun stopPlayback() = player.stop()
+
+    /** Names as typed; an empty one goes back to "Gospodarze" / "Goście". */
+    fun setTeamNames(homeTeam: String, awayTeam: String) {
+        viewModelScope.launch { dao.setTeamNames(matchId, teamNameOf(homeTeam), teamNameOf(awayTeam)) }
+    }
 
     override fun onCleared() {
         player.stop()

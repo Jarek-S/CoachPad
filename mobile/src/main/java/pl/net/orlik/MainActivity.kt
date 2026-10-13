@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$EVENT/$it")
                                 },
+                                onTeamNames = viewModel::setTeamNames,
                             )
                         }
                         composable("$MATCH/{$MATCH_ID}/$EVENT/{$EVENT_ID}") { entry ->

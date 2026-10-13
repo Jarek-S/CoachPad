@@ -119,6 +119,10 @@ interface MatchEventDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     fun match(matchId: String): Flow<Match?>
 
+    /** Null clears a name, so "Gospodarze" / "Goście" shows again. */
+    @Query("UPDATE matches SET home_team = :homeTeam, away_team = :awayTeam WHERE id = :matchId")
+    suspend fun setTeamNames(matchId: String, homeTeam: String?, awayTeam: String?)
+
     /** Matches on the phone, newest first. */
     @Query(
         """

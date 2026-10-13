@@ -36,10 +36,14 @@ fun teamName(team: Team, homeTeam: String?, awayTeam: String?): String = when (t
     Team.AWAY -> awayTeam ?: stringResource(R.string.team_away)
 }
 
-/** "Orły – Rywale FC", or "Mecz" until the team names are set. */
+/** "Orły – Rywale FC", or "Mecz" until a team name is set; a missing one shows as "Gospodarze" / "Goście". */
 @Composable
 fun matchTitle(homeTeam: String?, awayTeam: String?): String =
-    if (homeTeam != null && awayTeam != null) "$homeTeam – $awayTeam" else stringResource(R.string.match)
+    if (homeTeam == null && awayTeam == null) {
+        stringResource(R.string.match)
+    } else {
+        "${teamName(Team.HOME, homeTeam, awayTeam)} – ${teamName(Team.AWAY, homeTeam, awayTeam)}"
+    }
 
 @Composable
 fun eventTypeName(type: EventType): String = stringResource(

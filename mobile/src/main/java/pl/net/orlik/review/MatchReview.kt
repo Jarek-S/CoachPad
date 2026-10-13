@@ -82,6 +82,9 @@ private fun hintOf(event: MatchEvent, linked: Boolean): ReviewHint? {
     }
 }
 
+/** A team name as typed: trimmed, and null when left empty (the default name shows then). */
+fun teamNameOf(typed: String): String? = typed.trim().replace(Regex("\\s+"), " ").takeIf { it.isNotEmpty() }
+
 /** Play time as minutes:seconds, e.g. "41:02"; minutes keep counting past 59. */
 fun formatPlayTime(millis: Long): String {
     val seconds = millis / 1_000

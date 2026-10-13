@@ -104,6 +104,12 @@ class MatchReviewTest {
     }
 
     @Test
+    fun teamName_trimmedAndBlankIsNone() {
+        assertEquals("Orły Kraków", teamNameOf("  Orły   Kraków "))
+        assertNull(teamNameOf("   "))
+    }
+
+    @Test
     fun formats() {
         assertEquals("41:02", formatPlayTime(min(41) + 2_400))
         assertEquals("93:15", formatPlayTime(min(93) + 15_000))

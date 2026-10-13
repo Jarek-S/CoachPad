@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -23,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +44,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -67,8 +73,20 @@ fun MatchReviewScreen(
     onBack: () -> Unit,
     onTogglePlayback: (eventId: String, audioFileRef: String) -> Unit,
     onOpenEvent: (eventId: String) -> Unit,
+    onTeamNames: (homeTeam: String, awayTeam: String) -> Unit,
 ) {
     var confirmedExpanded by rememberSaveable { mutableStateOf(false) }
+    var editingNames by rememberSaveable { mutableStateOf(false) }
+    if (editingNames) {
+        TeamNamesDialog(
+            match = state.match,
+            onSave = { home, away ->
+                onTeamNames(home, away)
+                editingNames = false
+            },
+            onDismiss = { editingNames = false },
+        )
+    }
     val home = state.match?.homeTeam
     val away = state.match?.awayTeam
     Scaffold(
@@ -88,6 +106,13 @@ fun MatchReviewScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                    }
+                },
+                actions = {
+                    if (state.match != null) {
+                        IconButton(onClick = { editingNames = true }) {
+                            Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.team_names))
                         }
                     }
                 },
@@ -133,6 +158,38 @@ fun MatchReviewScreen(
             }
         }
     }
+}
+
+/** Two fields; an empty one keeps the default "Gospodarze" / "Goście". */
+@Composable
+private fun TeamNamesDialog(match: Match?, onSave: (String, String) -> Unit, onDismiss: () -> Unit) {
+    var home by rememberSaveable { mutableStateOf(match?.homeTeam.orEmpty()) }
+    var away by rememberSaveable { mutableStateOf(match?.awayTeam.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.team_names)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = home,
+                    onValueChange = { home = it },
+                    label = { Text(stringResource(R.string.team_home)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                )
+                OutlinedTextField(
+                    value = away,
+                    onValueChange = { away = it },
+                    label = { Text(stringResource(R.string.team_away)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onSave(home, away) }),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(home, away) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable
@@ -306,6 +363,7 @@ private fun MatchReviewScreenPreview() {
             onBack = {},
             onTogglePlayback = { _, _ -> },
             onOpenEvent = {},
+            onTeamNames = { _, _ -> },
         )
     }
 }
