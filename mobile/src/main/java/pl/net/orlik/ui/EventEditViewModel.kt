@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -30,9 +31,11 @@ import pl.net.orlik.review.EventDraft
 import pl.net.orlik.review.ReviewPosition
 import pl.net.orlik.review.ReviewRow
 import pl.net.orlik.review.draftOf
+import pl.net.orlik.review.goalCandidates
 import pl.net.orlik.review.matchReviewOf
 import pl.net.orlik.review.nextToReview
 import pl.net.orlik.review.positionOf
+import pl.net.orlik.review.relinked
 import pl.net.orlik.shared.EventType
 
 data class EventEditUiState(
@@ -46,6 +49,8 @@ data class EventEditUiState(
     val draft: EventDraft? = null,
     val durationMillis: Long? = null,
     val playing: Boolean = false,
+    /** For a disallowed goal: earlier goals of its team, to choose from on "Zmień". */
+    val goalCandidates: List<ReviewRow> = emptyList(),
 )
 
 /** What the screen does once an action is saved. */
@@ -75,7 +80,7 @@ class EventEditViewModel(
 
     private val durationMillis = MutableStateFlow<Long?>(null)
 
-    private val events = dao.eventsOf(matchId)
+    private val events = dao.eventsOf(matchId).stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val effects = Channel<EditEffect>(Channel.BUFFERED)
     val effect: Flow<EditEffect> = effects.receiveAsFlow()
@@ -85,16 +90,25 @@ class EventEditViewModel(
         events,
         dao.match(matchId),
         player.playingId,
-    ) { (id, draft, duration), list, match, playingId ->
+    ) { (id, draft, duration), stored, match, playingId ->
+        val list = stored.orEmpty()
         val review = matchReviewOf(list)
+        val rows = (review.toReview + review.confirmed).associateBy { it.eventId }
+        val event = list.firstOrNull { it.id == id }
+        val team = draft?.team
         EventEditUiState(
             match = match,
-            row = (review.toReview + review.confirmed).firstOrNull { it.eventId == id },
+            row = rows[id],
             recordedAt = list.firstOrNull { it.id == id }?.recordedAt,
             position = positionOf(review, id),
             draft = draft,
             durationMillis = duration,
             playing = playingId == id,
+            goalCandidates = if (event != null && team != null && draft.type == EventType.GOAL_DISALLOWED) {
+                goalCandidates(list, event.recordedAt, team).mapNotNull { rows[it.id] }
+            } else {
+                emptyList()
+            },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EventEditUiState())
 
@@ -102,9 +116,22 @@ class EventEditViewModel(
         load(startEventId)
     }
 
-    fun setType(type: EventType) = draft.update { it.withType(type) }
+    fun setType(type: EventType) {
+        if (draft.value?.type != type) changeAndRelink { it.withType(type) }
+    }
 
-    fun setTeam(team: Team) = draft.update { it.copy(team = team) }
+    fun setTeam(team: Team) {
+        if (draft.value?.team != team) changeAndRelink { it.copy(team = team) }
+    }
+
+    /** "Zmień": a goal chosen by hand, or null for none. Kept until the type or team changes. */
+    fun setLinkedGoal(goalId: String?) = draft.update { it.copy(linkedGoalId = goalId) }
+
+    private fun changeAndRelink(change: (EventDraft) -> EventDraft) {
+        val list = events.value.orEmpty()
+        val event = list.firstOrNull { it.id == eventId.value } ?: return
+        draft.update { relinked(change(it), event, list) }
+    }
 
     fun setNote(note: String) = draft.update { it.copy(note = note) }
 
@@ -133,7 +160,7 @@ class EventEditViewModel(
     fun delete() {
         viewModelScope.launch {
             val id = eventId.value
-            val next = nextToReview(matchReviewOf(events.first()), id)
+            val next = nextToReview(matchReviewOf(events.filterNotNull().first()), id)
             val deleted = edits.delete(id) ?: return@launch
             if (next != null) {
                 load(next)
@@ -148,7 +175,7 @@ class EventEditViewModel(
         viewModelScope.launch {
             val id = eventId.value
             // Worked out before saving, while a confirmed event is still in the list
-            val next = nextToReview(matchReviewOf(events.first()), id)
+            val next = nextToReview(matchReviewOf(events.filterNotNull().first()), id)
             draft.value?.let { edits.save(id, it, confirm) }
             if (next != null) load(next) else effects.send(EditEffect.Finished())
         }

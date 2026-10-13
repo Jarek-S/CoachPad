@@ -14,6 +14,9 @@ enum class ReviewHint {
 
     /** A goal or a card without the team it belongs to. */
     MISSING_TEAM,
+
+    /** A disallowed goal whose team has no earlier goal to cancel. */
+    NO_GOAL,
 }
 
 data class ReviewRow(
@@ -25,6 +28,10 @@ data class ReviewRow(
     val note: String?,
     val audioFileRef: String?,
     val hint: ReviewHint?,
+    /** A goal cancelled by a disallowed goal: it does not count towards the score. */
+    val cancelled: Boolean = false,
+    /** For a disallowed goal: play time of the goal it cancels. */
+    val cancelsGoalAt: Long? = null,
 )
 
 data class MatchReview(
@@ -38,7 +45,10 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
     // Without MATCH_START (not synced yet) minutes count from the oldest event the phone has
     val start = (sorted.firstOrNull { it.type == EventType.MATCH_START } ?: sorted.firstOrNull())?.recordedAt ?: 0
     val pauses = pausesFrom(sorted, type = { it.type }, at = { it.recordedAt })
+    val cancelled = cancelledGoals(sorted)
+    val byId = sorted.associateBy { it.id }
     val rows = sorted.map { event ->
+        val cancelledGoal = event.linkedGoalEventId?.takeIf { event.type == EventType.GOAL_DISALLOWED && it in cancelled }
         event.status to ReviewRow(
             eventId = event.id,
             playTimeMillis = playTimeMillis(event.recordedAt, start, pauses),
@@ -46,7 +56,9 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
             team = event.team,
             note = event.rawTranscript?.takeIf { it.isNotBlank() },
             audioFileRef = event.audioFileRef,
-            hint = hintOf(event),
+            hint = hintOf(event, linked = cancelledGoal != null),
+            cancelled = event.id in cancelled,
+            cancelsGoalAt = cancelledGoal?.let { playTimeMillis(byId.getValue(it).recordedAt, start, pauses) },
         )
     }
     return MatchReview(
@@ -60,9 +72,14 @@ val EventType.needsTeam: Boolean
     get() = this == EventType.GOAL || this == EventType.GOAL_DISALLOWED ||
         this == EventType.YELLOW_CARD || this == EventType.RED_CARD
 
-private fun hintOf(event: MatchEvent): ReviewHint? {
+private fun hintOf(event: MatchEvent, linked: Boolean): ReviewHint? {
     val type = event.type ?: return ReviewHint.DESCRIBE
-    return if (type.needsTeam && event.team == null) ReviewHint.MISSING_TEAM else null
+    return when {
+        type.needsTeam && event.team == null -> ReviewHint.MISSING_TEAM
+        // A confirmed one without a goal was accepted as such (the goal was never recorded)
+        type == EventType.GOAL_DISALLOWED && !linked && event.status == ReviewStatus.TO_REVIEW -> ReviewHint.NO_GOAL
+        else -> null
+    }
 }
 
 /** Play time as minutes:seconds, e.g. "41:02"; minutes keep counting past 59. */

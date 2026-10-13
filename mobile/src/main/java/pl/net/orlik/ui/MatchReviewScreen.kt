@@ -40,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -223,29 +224,37 @@ private fun EventRow(
                     Text(
                         if (team != null) "${eventTypeName(type)} · $team" else eventTypeName(type),
                         style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = if (row.cancelled) TextDecoration.LineThrough else null,
                     )
                 }
             }
-            when {
-                row.hint == ReviewHint.DESCRIBE -> Text(
+            when (row.hint) {
+                ReviewHint.DESCRIBE -> Text(
                     stringResource(R.string.hint_describe),
                     style = MaterialTheme.typography.bodyMedium,
                     fontStyle = FontStyle.Italic,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                row.hint == ReviewHint.MISSING_TEAM -> Text(
-                    stringResource(R.string.hint_missing_team),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ReviewText,
-                )
-                row.note != null -> Text(
-                    "„${row.note}”",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                ReviewHint.MISSING_TEAM -> HintText(stringResource(R.string.hint_missing_team))
+                ReviewHint.NO_GOAL -> HintText(stringResource(R.string.hint_no_goal))
+                null -> Unit
             }
+            row.cancelsGoalAt?.let { MutedText(stringResource(R.string.cancels_goal_at, formatPlayTime(it))) }
+            if (row.cancelled) MutedText(stringResource(R.string.not_counted))
+            // A description waiting for review takes the place of the note
+            if (row.hint != ReviewHint.DESCRIBE) row.note?.let { MutedText("„$it”") }
         }
     }
+}
+
+@Composable
+private fun HintText(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = ReviewText)
+}
+
+@Composable
+private fun MutedText(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** The main element of a row (design doc, section 4): filled while pending, outlined once confirmed. */
@@ -283,9 +292,13 @@ private fun MatchReviewScreenPreview() {
                     toReview = listOf(
                         row("a", 3, null, hint = ReviewHint.DESCRIBE),
                         row("b", 27, EventType.YELLOW_CARD, hint = ReviewHint.MISSING_TEAM),
-                        row("c", 41, EventType.GOAL_DISALLOWED, Team.AWAY, note = "Spalony"),
+                        row("c", 41, EventType.GOAL_DISALLOWED, Team.AWAY, note = "Spalony").copy(cancelsGoalAt = 38 * 60_000L + 50_000),
                     ),
-                    confirmed = listOf(row("s", 0, EventType.MATCH_START), row("g", 12, EventType.GOAL, Team.HOME, "Marcin, asysta Jurek")),
+                    confirmed = listOf(
+                        row("s", 0, EventType.MATCH_START),
+                        row("g", 12, EventType.GOAL, Team.HOME, "Marcin, asysta Jurek"),
+                        row("h", 38, EventType.GOAL, Team.AWAY).copy(cancelled = true),
+                    ),
                 ),
                 durations = mapOf("a" to 6_000L, "b" to 5_000L, "c" to 7_000L, "g" to 9_000L),
                 playingId = "b",

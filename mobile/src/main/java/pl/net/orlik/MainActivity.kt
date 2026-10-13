@@ -128,6 +128,7 @@ class MainActivity : ComponentActivity() {
                                 onType = viewModel::setType,
                                 onTeam = viewModel::setTeam,
                                 onNote = viewModel::setNote,
+                                onLinkedGoal = viewModel::setLinkedGoal,
                                 onSkip = viewModel::skip,
                                 onConfirm = viewModel::confirm,
                             )

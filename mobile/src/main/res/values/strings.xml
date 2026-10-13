@@ -56,6 +56,14 @@
     <string name="delete_recording">Usuń nagranie</string>
     <string name="recording_deleted">Usunięto nagranie</string>
     <string name="undo">Cofnij</string>
+    <string name="cancels_goal">Unieważnia gol</string>
+    <string name="change">Zmień</string>
+    <string name="link_choose_team">Wybierz drużynę, aby powiązać gol</string>
+    <string name="link_no_goal">Nie znaleziono wcześniejszego gola tej drużyny</string>
+    <string name="link_none">Bez powiązania</string>
+    <string name="hint_no_goal">Nie znaleziono gola do powiązania</string>
+    <string name="cancels_goal_at">unieważnia gol z %s</string>
+    <string name="not_counted">nie liczy się do wyniku</string>
 
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>

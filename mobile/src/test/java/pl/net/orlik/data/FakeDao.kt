@@ -29,8 +29,16 @@ class FakeDao : MatchEventDao {
 
     override suspend fun event(id: String) = events.firstOrNull { it.id == id }
 
-    override suspend fun updateReview(id: String, type: EventType?, team: Team?, note: String?, status: ReviewStatus) =
-        change(id) { it.copy(type = type, team = team, rawTranscript = note, status = status) }
+    override suspend fun updateReview(
+        id: String,
+        type: EventType?,
+        team: Team?,
+        note: String?,
+        linkedGoalId: String?,
+        status: ReviewStatus,
+    ) = change(id) {
+        it.copy(type = type, team = team, rawTranscript = note, linkedGoalEventId = linkedGoalId, status = status)
+    }
 
     override suspend fun setStatus(id: String, status: ReviewStatus) = change(id) { it.copy(status = status) }
 

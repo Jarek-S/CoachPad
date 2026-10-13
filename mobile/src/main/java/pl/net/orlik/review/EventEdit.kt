@@ -18,9 +18,15 @@ data class EventDraft(
     val type: EventType? = null,
     val team: Team? = null,
     val note: String = "",
+    /** For a disallowed goal: the goal it cancels; null when none is linked. */
+    val linkedGoalId: String? = null,
 ) {
     /** A type that has no team (a note) drops the team, so a stale one is not saved. */
     fun withType(type: EventType): EventDraft = copy(type = type, team = team.takeIf { type.needsTeam })
+
+    /** The link as stored: only a disallowed goal has one. */
+    val storedLink: String?
+        get() = linkedGoalId.takeIf { type == EventType.GOAL_DISALLOWED }
 
     /** "Zatwierdź" needs a type, and a team for goals and cards. */
     val canConfirm: Boolean
@@ -32,7 +38,27 @@ data class EventDraft(
 }
 
 fun draftOf(event: MatchEvent): EventDraft =
-    EventDraft(type = event.type, team = event.team, note = event.rawTranscript.orEmpty())
+    EventDraft(
+        type = event.type,
+        team = event.team,
+        note = event.rawTranscript.orEmpty(),
+        linkedGoalId = event.linkedGoalEventId,
+    )
+
+/**
+ * After the type or the team changes, a disallowed goal is linked again to the goal it cancels on
+ * its own (design doc, section 8): this is the moment its team becomes known. [events] are the
+ * match's events as stored.
+ */
+fun relinked(draft: EventDraft, event: MatchEvent, events: List<MatchEvent>): EventDraft {
+    val team = draft.team
+    val link = if (draft.type == EventType.GOAL_DISALLOWED && team != null) {
+        goalToCancel(events, event.id, event.recordedAt, team)
+    } else {
+        null
+    }
+    return draft.copy(linkedGoalId = link)
+}
 
 /** Where the edited event is among those waiting for review: "3 z 3". */
 data class ReviewPosition(val index: Int, val count: Int)

@@ -137,8 +137,21 @@ interface MatchEventDao {
     suspend fun event(id: String): MatchEvent?
 
     /** Saves what the edit screen changes. */
-    @Query("UPDATE events SET type = :type, team = :team, raw_transcript = :note, status = :status WHERE id = :id")
-    suspend fun updateReview(id: String, type: EventType?, team: Team?, note: String?, status: ReviewStatus)
+    @Query(
+        """
+        UPDATE events SET type = :type, team = :team, raw_transcript = :note, linked_goal_event_id = :linkedGoalId,
+            status = :status
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReview(
+        id: String,
+        type: EventType?,
+        team: Team?,
+        note: String?,
+        linkedGoalId: String?,
+        status: ReviewStatus,
+    )
 
     @Query("UPDATE events SET status = :status WHERE id = :id")
     suspend fun setStatus(id: String, status: ReviewStatus)
