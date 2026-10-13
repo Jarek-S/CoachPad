@@ -32,3 +32,25 @@ fun playTimeMillis(at: Long, matchStart: Long, pauses: List<Pause>): Long {
 /** Full minutes of play time at moment [at] (e.g. 35:59 → 35). */
 fun playMinute(at: Long, matchStart: Long, pauses: List<Pause>): Long =
     playTimeMillis(at, matchStart, pauses) / 60_000
+
+/**
+ * Pauses of a match rebuilt from its events, sorted by time: each MATCH_PAUSE opens a pause and
+ * the next MATCH_RESUME closes it; other events are skipped. [type] and [at] read an event, so
+ * the watch and the phone use this with their own event classes.
+ */
+fun <T> pausesFrom(events: List<T>, type: (T) -> EventType?, at: (T) -> Long): List<Pause> {
+    val pauses = mutableListOf<Pause>()
+    for (event in events) {
+        when (type(event)) {
+            EventType.MATCH_PAUSE -> pauses += Pause(pausedAt = at(event))
+            EventType.MATCH_RESUME -> {
+                val last = pauses.lastOrNull()
+                if (last != null && last.resumedAt == null) {
+                    pauses[pauses.lastIndex] = last.copy(resumedAt = at(event))
+                }
+            }
+            else -> Unit
+        }
+    }
+    return pauses
+}

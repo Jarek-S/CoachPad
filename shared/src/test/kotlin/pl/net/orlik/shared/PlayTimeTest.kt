@@ -68,4 +68,27 @@ class PlayTimeTest {
         val pauses = listOf(Pause(matchStart + min(30), matchStart + min(35)))
         assertEquals(min(35), playTimeMillis(matchStart + min(40), matchStart, pauses))
     }
+
+    @Test
+    fun pausesFrom_pairsPauseWithNextResume_andKeepsOpenPause() {
+        val events = listOf(
+            EventType.MATCH_START to 0L,
+            EventType.MATCH_PAUSE to min(10),
+            null to min(11),
+            EventType.MATCH_RESUME to min(12),
+            EventType.MATCH_PAUSE to min(20),
+        )
+
+        assertEquals(
+            listOf(Pause(min(10), min(12)), Pause(min(20), null)),
+            pausesFrom(events, type = { it.first }, at = { it.second }),
+        )
+    }
+
+    @Test
+    fun pausesFrom_ignoresResumeWithoutPause() {
+        val events = listOf(EventType.MATCH_START to 0L, EventType.MATCH_RESUME to min(5))
+
+        assertEquals(emptyList<Pause>(), pausesFrom(events, type = { it.first }, at = { it.second }))
+    }
 }

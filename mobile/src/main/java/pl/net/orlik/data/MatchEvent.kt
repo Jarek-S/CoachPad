@@ -87,6 +87,17 @@ data class Match(
     val awayTeam: String? = null,
 )
 
+/** One row of the match list. */
+data class MatchListItem(
+    val matchId: String,
+    val homeTeam: String?,
+    val awayTeam: String?,
+    /** Time of the match's first event (MATCH_START when it was synced). */
+    val startedAt: Long,
+    val toReview: Int,
+    val recordings: Int,
+)
+
 @Dao
 interface MatchEventDao {
 
@@ -100,6 +111,27 @@ interface MatchEventDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM events WHERE id = :id)")
     suspend fun exists(id: String): Boolean
+
+    /** A match's events in time order, mistakes removed in review left out. */
+    @Query("SELECT * FROM events WHERE match_id = :matchId AND status != 'DELETED' ORDER BY recorded_at")
+    fun eventsOf(matchId: String): Flow<List<MatchEvent>>
+
+    @Query("SELECT * FROM matches WHERE id = :matchId")
+    fun match(matchId: String): Flow<Match?>
+
+    /** Matches on the phone, newest first. */
+    @Query(
+        """
+        SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam,
+            (SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id) AS startedAt,
+            (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
+            (SELECT COUNT(*) FROM events e
+                WHERE e.match_id = m.id AND e.audio_file_ref IS NOT NULL AND e.status != 'DELETED') AS recordings
+        FROM matches m
+        ORDER BY startedAt DESC
+        """,
+    )
+    fun matches(): Flow<List<MatchListItem>>
 
     /** Events on the phone, mistakes removed in review not counted. */
     @Query("SELECT COUNT(*) FROM events WHERE status != 'DELETED'")

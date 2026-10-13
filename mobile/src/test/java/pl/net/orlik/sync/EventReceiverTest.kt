@@ -13,6 +13,7 @@ import org.junit.Test
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.sync.EventMetadata
@@ -105,5 +106,11 @@ class EventReceiverTest {
         override suspend fun exists(id: String) = events.any { it.id == id }
 
         override fun count(): Flow<Int> = flowOf(events.size)
+
+        override fun eventsOf(matchId: String): Flow<List<MatchEvent>> = flowOf(events.filter { it.matchId == matchId })
+
+        override fun match(matchId: String): Flow<Match?> = flowOf(matches.firstOrNull { it.id == matchId })
+
+        override fun matches(): Flow<List<MatchListItem>> = flowOf(emptyList())
     }
 }

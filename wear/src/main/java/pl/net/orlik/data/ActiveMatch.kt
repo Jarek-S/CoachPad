@@ -2,6 +2,7 @@ package pl.net.orlik.data
 
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.Pause
+import pl.net.orlik.shared.pausesFrom
 import pl.net.orlik.timer.ShiftTimer
 
 /**
@@ -28,18 +29,6 @@ fun activeMatchFrom(events: List<MatchEvent>): ActiveMatch? {
     val start = events.firstOrNull { it.type == EventType.MATCH_START } ?: return null
     if (events.any { it.type == EventType.MATCH_END }) return null
 
-    val pauses = mutableListOf<Pause>()
-    for (event in events) {
-        when (event.type) {
-            EventType.MATCH_PAUSE -> pauses += Pause(pausedAt = event.recordedAt)
-            EventType.MATCH_RESUME -> {
-                val last = pauses.lastOrNull()
-                if (last != null && last.resumedAt == null) {
-                    pauses[pauses.lastIndex] = last.copy(resumedAt = event.recordedAt)
-                }
-            }
-            else -> Unit
-        }
-    }
+    val pauses = pausesFrom(events, type = { it.type }, at = { it.recordedAt })
     return ActiveMatch(matchId = start.matchId, startedAt = start.recordedAt, pauses = pauses)
 }

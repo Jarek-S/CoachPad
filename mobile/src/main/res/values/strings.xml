@@ -1,5 +1,30 @@
 <resources>
     <string name="app_name">MatchNotes</string>
+    <string name="matches_title">Mecze</string>
+    <string name="sync_title">Synchronizacja</string>
+    <string name="back">Wstecz</string>
+    <string name="no_matches">Na telefonie nie ma jeszcze meczów. Zsynchronizuj zegarek.</string>
+    <string name="match">Mecz</string>
+    <string name="team_home">Gospodarze</string>
+    <string name="team_away">Goście</string>
+    <string name="reviewed">Przejrzany</string>
+    <string name="to_review">Do przejrzenia</string>
+    <string name="confirmed">Potwierdzone</string>
+    <string name="all_reviewed">Wszystko przejrzane.</string>
+    <string name="hint_describe">Bez opisu — odsłuchaj i uzupełnij</string>
+    <string name="hint_missing_team">Brak drużyny</string>
+    <string name="no_recording">bez nagrania</string>
+    <string name="play_recording">Odtwórz nagranie</string>
+    <string name="stop_recording">Zatrzymaj nagranie</string>
+    <string name="type_match_start">Początek meczu</string>
+    <string name="type_match_end">Koniec meczu</string>
+    <string name="type_match_pause">Pauza</string>
+    <string name="type_match_resume">Wznowienie</string>
+    <string name="type_goal">Gol</string>
+    <string name="type_goal_disallowed">Gol nieuznany</string>
+    <string name="type_yellow_card">Żółta kartka</string>
+    <string name="type_red_card">Czerwona kartka</string>
+    <string name="type_note">Notatka</string>
     <string name="pending_title">Oczekują na synchronizację</string>
     <string name="loading">Wczytywanie…</string>
     <string name="no_watch_data">Brak danych z zegarka. Uruchom aplikację na zegarku.</string>
@@ -23,6 +48,12 @@
         <item quantity="few">%d nagrania</item>
         <item quantity="many">%d nagrań</item>
         <item quantity="other">%d nagrania</item>
+    </plurals>
+    <plurals name="to_review_count">
+        <item quantity="one">%d do przejrzenia</item>
+        <item quantity="few">%d do przejrzenia</item>
+        <item quantity="many">%d do przejrzenia</item>
+        <item quantity="other">%d do przejrzenia</item>
     </plurals>
     <plurals name="events">
         <item quantity="one">%d zdarzenie</item>
