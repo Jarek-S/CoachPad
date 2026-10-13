@@ -133,6 +133,23 @@ interface MatchEventDao {
     )
     fun matches(): Flow<List<MatchListItem>>
 
+    @Query("SELECT * FROM events WHERE id = :id")
+    suspend fun event(id: String): MatchEvent?
+
+    /** Saves what the edit screen changes. */
+    @Query("UPDATE events SET type = :type, team = :team, raw_transcript = :note, status = :status WHERE id = :id")
+    suspend fun updateReview(id: String, type: EventType?, team: Team?, note: String?, status: ReviewStatus)
+
+    @Query("UPDATE events SET status = :status WHERE id = :id")
+    suspend fun setStatus(id: String, status: ReviewStatus)
+
+    /** Deleted recordings whose audio file is still on the phone (kept while "Cofnij" is offered). */
+    @Query("SELECT * FROM events WHERE status = 'DELETED' AND audio_file_ref IS NOT NULL")
+    suspend fun deletedWithAudio(): List<MatchEvent>
+
+    @Query("UPDATE events SET audio_file_ref = NULL WHERE id = :id")
+    suspend fun clearAudio(id: String)
+
     /** Events on the phone, mistakes removed in review not counted. */
     @Query("SELECT COUNT(*) FROM events WHERE status != 'DELETED'")
     fun count(): Flow<Int>

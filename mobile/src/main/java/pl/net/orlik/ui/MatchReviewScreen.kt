@@ -2,6 +2,7 @@ package pl.net.orlik.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -64,6 +65,7 @@ fun MatchReviewScreen(
     state: MatchReviewUiState,
     onBack: () -> Unit,
     onTogglePlayback: (eventId: String, audioFileRef: String) -> Unit,
+    onOpenEvent: (eventId: String) -> Unit,
 ) {
     var confirmedExpanded by rememberSaveable { mutableStateOf(false) }
     val home = state.match?.homeTeam
@@ -113,7 +115,7 @@ fun MatchReviewScreen(
                     )
                 }
             } else {
-                eventCard(state.review.toReview, state, home, away, pending = true, onTogglePlayback)
+                eventCard(state.review.toReview, state, home, away, pending = true, onTogglePlayback, onOpenEvent)
             }
             item {
                 TextButton(onClick = { confirmedExpanded = !confirmedExpanded }) {
@@ -126,7 +128,7 @@ fun MatchReviewScreen(
                 }
             }
             if (confirmedExpanded) {
-                eventCard(state.review.confirmed, state, home, away, pending = false, onTogglePlayback)
+                eventCard(state.review.confirmed, state, home, away, pending = false, onTogglePlayback, onOpenEvent)
             }
         }
     }
@@ -154,6 +156,7 @@ private fun LazyListScope.eventCard(
     away: String?,
     pending: Boolean,
     onTogglePlayback: (String, String) -> Unit,
+    onOpenEvent: (String) -> Unit,
 ) {
     item {
         Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
@@ -168,6 +171,7 @@ private fun LazyListScope.eventCard(
                         home = home,
                         away = away,
                         onTogglePlayback = onTogglePlayback,
+                        onOpen = { onOpenEvent(row.eventId) },
                     )
                 }
             }
@@ -184,9 +188,12 @@ private fun EventRow(
     home: String?,
     away: String?,
     onTogglePlayback: (String, String) -> Unit,
+    onOpen: () -> Unit,
 ) {
+    // Structural events have nothing to edit
+    val editable = row.type?.isStructural != true
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(enabled = editable, onClick = onOpen).padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -285,6 +292,7 @@ private fun MatchReviewScreenPreview() {
             ),
             onBack = {},
             onTogglePlayback = { _, _ -> },
+            onOpenEvent = {},
         )
     }
 }

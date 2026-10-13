@@ -2,18 +2,15 @@ package pl.net.orlik.sync
 
 import java.io.File
 import java.nio.file.Files
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import pl.net.orlik.data.FakeDao
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEvent
-import pl.net.orlik.data.MatchEventDao
-import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.sync.EventMetadata
@@ -89,28 +86,5 @@ class EventReceiverTest {
         assertFalse(File(recordingsDir, "r1.m4a").exists())
         assertFalse(receiver.onMetadata(recording))
         assertNull(dao.events.firstOrNull())
-    }
-
-    private class FakeDao : MatchEventDao {
-        val events = mutableListOf<MatchEvent>()
-        val matches = mutableListOf<Match>()
-
-        override suspend fun insert(event: MatchEvent) {
-            if (events.none { it.id == event.id }) events += event
-        }
-
-        override suspend fun insertMatch(match: Match) {
-            if (matches.none { it.id == match.id }) matches += match
-        }
-
-        override suspend fun exists(id: String) = events.any { it.id == id }
-
-        override fun count(): Flow<Int> = flowOf(events.size)
-
-        override fun eventsOf(matchId: String): Flow<List<MatchEvent>> = flowOf(events.filter { it.matchId == matchId })
-
-        override fun match(matchId: String): Flow<Match?> = flowOf(matches.firstOrNull { it.id == matchId })
-
-        override fun matches(): Flow<List<MatchListItem>> = flowOf(emptyList())
     }
 }

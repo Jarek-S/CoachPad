@@ -39,6 +39,9 @@ class AudioPlayer {
         }
     }
 
+    /** How far the playing recording has got, in milliseconds; 0 when nothing plays. */
+    fun positionMillis(): Long = runCatching { player?.currentPosition?.toLong() }.getOrNull() ?: 0
+
     fun stop() {
         player?.release()
         player = null
