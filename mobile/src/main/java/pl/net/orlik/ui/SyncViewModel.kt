@@ -17,6 +17,7 @@ import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.PhoneSync
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.sync.SyncStatus
+import pl.net.orlik.sync.WatchConnection
 
 /** What the watch reports about its queue. */
 sealed interface WatchQueue {
@@ -32,13 +33,16 @@ data class SyncUiState(
     val watch: WatchQueue = WatchQueue.Loading,
     val sync: SyncStatus = SyncStatus.Idle,
     val eventsOnPhone: Int = 0,
+    /** Null until first checked; the summary may still show what was queued at the last contact. */
+    val watchConnected: Boolean? = null,
 ) {
     /**
      * Sync and delete buttons are active only when there is something on the watch and it would
-     * accept the command: not during a match there, and not while a sync is running.
+     * accept the command: the watch in range, not during a match there, and not while a sync is running.
      */
     val canSync: Boolean
         get() = watch is WatchQueue.Known &&
+            watchConnected == true &&
             !watch.summary.matchInProgress &&
             watch.summary.matches.isNotEmpty() &&
             sync !is SyncStatus.Running
@@ -47,6 +51,7 @@ data class SyncUiState(
 class SyncViewModel(
     summaries: Flow<QueueSummary?>,
     eventsOnPhone: Flow<Int>,
+    watchConnected: Flow<Boolean>,
     private val phoneSync: PhoneSync,
 ) : ViewModel() {
 
@@ -54,6 +59,7 @@ class SyncViewModel(
         summaries.map { if (it == null) WatchQueue.NoWatchData else WatchQueue.Known(it) },
         phoneSync.status,
         eventsOnPhone,
+        watchConnected,
         ::SyncUiState,
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUiState())
 
@@ -69,6 +75,7 @@ class SyncViewModel(
                 SyncViewModel(
                     summaries = QueueSummarySource(app).summaries,
                     eventsOnPhone = PhoneDatabase.get(app).matchEventDao().count(),
+                    watchConnected = WatchConnection(app).connected,
                     phoneSync = PhoneSync.get(app),
                 )
             }

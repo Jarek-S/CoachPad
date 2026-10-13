@@ -26,11 +26,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import pl.net.orlik.data.DeletedRecording
 import pl.net.orlik.data.EventEdits
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.EditEffect
 import pl.net.orlik.ui.EventEditScreen
 import pl.net.orlik.ui.EventEditViewModel
@@ -66,6 +69,13 @@ class MainActivity : ComponentActivity() {
                 }
                 // Screens by route: the match list is the start, sync and a match's review open from it
                 val navController = rememberNavController()
+                if (savedInstanceState == null) {
+                    // Matches waiting on the watch: open sync at once, over the list (design doc, section 11)
+                    LaunchedEffect(Unit) {
+                        val summary = withTimeoutOrNull(SUMMARY_WAIT_MILLIS) { QueueSummarySource(application).summaries.first() }
+                        if (summary?.matches?.isNotEmpty() == true) navController.navigate(SYNC)
+                    }
+                }
                 Box(Modifier.fillMaxSize()) {
                     NavHost(navController, startDestination = MATCHES) {
                         composable(MATCHES) {
@@ -151,5 +161,8 @@ class MainActivity : ComponentActivity() {
         const val MATCH_ID = "matchId"
         const val EVENT = "event"
         const val EVENT_ID = "eventId"
+
+        /** The summary is stored on the phone, so it normally comes at once. */
+        const val SUMMARY_WAIT_MILLIS = 2_000L
     }
 }

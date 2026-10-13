@@ -107,6 +107,12 @@ private fun SyncContent(
             WatchQueue.Loading -> item { Text(stringResource(R.string.loading)) }
             WatchQueue.NoWatchData -> item { Text(stringResource(R.string.no_watch_data)) }
             is WatchQueue.Known -> {
+                // The list below is what the watch reported at the last contact
+                if (state.watchConnected == false) {
+                    item {
+                        Text(stringResource(R.string.watch_unavailable_last_known), color = MaterialTheme.colorScheme.error)
+                    }
+                }
                 if (watch.summary.matchInProgress) {
                     item {
                         Text(
@@ -212,6 +218,7 @@ private fun SyncScreenPreview() {
                 ),
                 sync = SyncStatus.Running(received = 5),
                 eventsOnPhone = 21,
+                watchConnected = true,
             ),
             onSync = {},
             onDelete = {},

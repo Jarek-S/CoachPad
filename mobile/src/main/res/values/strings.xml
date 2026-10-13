@@ -37,6 +37,7 @@
     <string name="sync_done">Synchronizacja zakończona, odebrano: %d</string>
     <string name="sync_rejected">Zegarek odrzucił synchronizację: mecz w toku</string>
     <string name="sync_watch_unavailable">Zegarek niedostępny</string>
+    <string name="watch_unavailable_last_known">Zegarek niedostępny — stan z ostatniego połączenia</string>
     <string name="delete">Usuń</string>
     <string name="cancel">Anuluj</string>
     <string name="delete_match_title">Usunąć mecz z zegarka?</string>
