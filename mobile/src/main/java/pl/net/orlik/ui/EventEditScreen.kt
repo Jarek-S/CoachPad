@@ -1,6 +1,7 @@
 package pl.net.orlik.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -20,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -71,8 +73,11 @@ import pl.net.orlik.review.formatDuration
 import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.review.needsTeam
 import pl.net.orlik.shared.EventType
+import pl.net.orlik.ui.theme.GlassBorder
+import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.MatchNotesTheme
 import pl.net.orlik.ui.theme.OnStadium
+import pl.net.orlik.ui.theme.OnStadiumHint
 import pl.net.orlik.ui.theme.OnStadiumMuted
 import pl.net.orlik.ui.theme.ReviewText
 import pl.net.orlik.ui.theme.stadiumTopAppBarColors
@@ -342,7 +347,8 @@ private fun EditButtons(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+    // Glass over the stadium instead of a white bar (design doc, section 11)
+    GlassPanel(modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Why "Zatwierdź" is not available yet
             val missing = when {
@@ -350,14 +356,28 @@ private fun EditButtons(
                 !draft.canConfirm -> R.string.choose_team
                 else -> null
             }
-            missing?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = ReviewText) }
+            missing?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = OnStadiumHint) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (pending) {
-                    OutlinedButton(onClick = onSkip, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(
+                        onClick = onSkip,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                        border = BorderStroke(1.dp, GlassBorder),
+                    ) {
                         Text(stringResource(R.string.skip))
                     }
                 }
-                Button(onClick = onConfirm, enabled = draft.canConfirm, modifier = Modifier.weight(if (pending) 1.6f else 1f)) {
+                Button(
+                    onClick = onConfirm,
+                    enabled = draft.canConfirm,
+                    modifier = Modifier.weight(if (pending) 1.6f else 1f),
+                    // The default disabled colours are dark-on-light and vanish on the stadium
+                    colors = ButtonDefaults.buttonColors(
+                        disabledContainerColor = OnStadium.copy(alpha = 0.12f),
+                        disabledContentColor = OnStadium.copy(alpha = 0.5f),
+                    ),
+                ) {
                     Text(stringResource(if (pending) R.string.confirm_next else R.string.save))
                 }
             }

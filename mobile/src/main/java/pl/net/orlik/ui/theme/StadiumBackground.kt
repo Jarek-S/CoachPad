@@ -2,17 +2,21 @@ package pl.net.orlik.ui.theme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import pl.net.orlik.R
 
 /** Text and icons drawn straight on the stadium (top bars, section headers); cards stay white. */
@@ -43,6 +47,29 @@ fun StadiumBackground(modifier: Modifier = Modifier, content: @Composable BoxSco
         )
         content()
     }
+}
+
+/** Glass panel over the stadium, as on the platform: a faint blue fill with a light edge. */
+val GlassFill = Color(0x1A82B4FF)
+val GlassBorder = Color(0x73AACDFF)
+
+/** Hints on glass: the amber of "Do przejrzenia", light enough for the dark background. */
+val OnStadiumHint = Color(0xFFFFC970)
+
+/**
+ * Translucent "glass" panel. The stadium image is blurred already, so transparency alone looks
+ * like frosted glass.
+ */
+@Composable
+fun GlassPanel(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+    val shape = RoundedCornerShape(24.dp)
+    Box(
+        modifier
+            .clip(shape)
+            .background(GlassFill)
+            .border(1.dp, GlassBorder, shape),
+        content = content,
+    )
 }
 
 /** Top bar over the stadium: no fill of its own, white title and icons. */
