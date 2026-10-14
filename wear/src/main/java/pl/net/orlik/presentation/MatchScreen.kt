@@ -52,6 +52,7 @@ import pl.net.orlik.data.ActiveMatch
 import pl.net.orlik.presentation.theme.MatchNotesTheme
 import pl.net.orlik.presentation.theme.MatchTimeColor
 import pl.net.orlik.presentation.theme.MicColor
+import pl.net.orlik.presentation.theme.RecordingColor
 import pl.net.orlik.presentation.theme.OutlineColor
 import pl.net.orlik.presentation.theme.ShiftColor
 import pl.net.orlik.presentation.theme.EdgeTrackColor
@@ -107,7 +108,7 @@ private fun MatchInProgress(
     ) {
         MatchClock(match, now, shiftState)
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            MicButton(isRecording = state.isRecording, onClick = onToggleRecording)
+            MicButton(isRecording = state.isRecording, failedStarts = state.failedStarts, onClick = onToggleRecording)
             if (shiftState is ShiftTimerState.AwaitingConfirmation) ConfirmShiftButton(onConfirmShift)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -218,7 +219,7 @@ private fun MatchClock(match: ActiveMatch, now: Long, shiftState: ShiftTimerStat
 
 /** Main action: tap to start, tap again to stop (also stops by itself after the limit). */
 @Composable
-private fun MicButton(isRecording: Boolean, onClick: () -> Unit) {
+private fun MicButton(isRecording: Boolean, failedStarts: Int, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     val view = LocalView.current
     val limitProgress = remember { Animatable(0f) }
@@ -231,6 +232,10 @@ private fun MicButton(isRecording: Boolean, onClick: () -> Unit) {
         }
         limitProgress.snapTo(0f)
         if (isRecording) limitProgress.animateTo(1f, tween(MAX_RECORDING_MILLIS, easing = LinearEasing))
+    }
+    // A start that failed changes nothing on screen, so it must be felt (design doc, section 8)
+    LaunchedEffect(failedStarts) {
+        if (failedStarts > 0) haptic.performHapticFeedback(HapticFeedbackType.Reject)
     }
     // Screen-off would move the app to the background and mute the microphone
     DisposableEffect(isRecording) {
@@ -253,6 +258,7 @@ private fun MicButton(isRecording: Boolean, onClick: () -> Unit) {
             contentDescription = stringResource(if (isRecording) R.string.stop_recording else R.string.record),
             size = BigButtonSize,
             onClick = onClick,
+            color = if (isRecording) RecordingColor else MicColor,
         )
     }
 }

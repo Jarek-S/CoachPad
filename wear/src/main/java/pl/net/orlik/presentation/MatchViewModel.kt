@@ -26,7 +26,12 @@ sealed interface MatchUiState {
     /** Reading the queue to find a match in progress. */
     data object Loading : MatchUiState
     data object NoMatch : MatchUiState
-    data class InProgress(val match: ActiveMatch, val isRecording: Boolean = false) : MatchUiState
+    data class InProgress(
+        val match: ActiveMatch,
+        val isRecording: Boolean = false,
+        /** Times the microphone could not be opened; each one gets a warning vibration. */
+        val failedStarts: Int = 0,
+    ) : MatchUiState
 }
 
 class MatchViewModel(
@@ -122,6 +127,7 @@ class MatchViewModel(
         } catch (e: Exception) {
             Log.e(TAG, "Cannot start recording", e)
             file.delete()
+            updateInProgress { it.copy(failedStarts = it.failedStarts + 1) }
             return
         }
         recording = newRecording

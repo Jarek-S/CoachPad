@@ -13,6 +13,9 @@ val WallTimeColor = Color.White
 /** Microphone button and match start button. */
 val MicColor = Color(0xFF1D9E75)
 
+/** Microphone button while recording: red, so "on" is obvious at a glance during play. */
+val RecordingColor = Color(0xFFE53935)
+
 /** Outline of the small round buttons (pause, end match). */
 val OutlineColor = Color(0xFF3A3A3C)
 
