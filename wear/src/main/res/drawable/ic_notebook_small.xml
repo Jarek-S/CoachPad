@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notebook silhouette (pitch with a pen) for notifications and the watch face ongoing activity icon.
+     The launcher's monochrome icon cropped to its content, with lines thick enough for 24 dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="720"
+    android:viewportHeight="720">
+    <group android:translateX="-152" android:translateY="-152">
+        <path android:pathData="M320,182 L704,182 Q712,182 712,190 L712,834 Q712,842 704,842 L320,842 Q312,842 312,834 L312,190 Q312,182 320,182 Z M312,512 L712,512 M389,182 L389,288 L635,288 L635,182 M389,842 L389,736 L635,736 L635,842" android:strokeColor="#99FFFFFF" android:strokeWidth="34" android:strokeLineJoin="round" />
+        <group android:translateX="507.9" android:translateY="513.0" android:rotation="40" android:scaleX="1.25" android:scaleY="1.25">
+            <path android:pathData="M-42,150 L-42,-288 A42,42 0 0,1 42,-288 L42,150 Z M-42,180 L42,180 L7,294 Q0,314 -7,294 Z M-42,-268 L-42,-246 L-56,-246 L-56,-66 A8,8 0 0,1 -72,-66 L-72,-256 A12,12 0 0,1 -60,-268 Z" android:fillColor="#FFFFFFFF" />
+        </group>
+    </group>
+</vector>
