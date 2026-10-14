@@ -94,7 +94,7 @@ private fun MatchRoute(
         viewModel.startMatch()
     }
     // Leaving the screen ends a recording in progress (background apps get a muted microphone)
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopRecording() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopRecording(StopReason.APP_HIDDEN) }
 
     ScreenScaffold(
         // During a match the wall-clock time is one tap away on the match clock (docs section 10)

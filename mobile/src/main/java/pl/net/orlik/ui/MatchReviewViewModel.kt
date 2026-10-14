@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.net.orlik.audio.AudioDurations
+import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
@@ -40,13 +41,15 @@ class MatchReviewViewModel(
     private val recordingsDir: File,
 ) : ViewModel() {
 
-    private val player = AudioPlayer()
+    private val player = AudioPlayer(viewModelScope)
 
     private val events = dao.eventsOf(matchId)
 
     private val durations = events.map { list ->
         list.mapNotNull { event ->
             val file = event.audioFileRef ?: return@mapNotNull null
+            // Measured here too, so playback starts without the wait
+            AudioLevels.gainMillibels(File(recordingsDir, file))
             AudioDurations.of(File(recordingsDir, file))?.let { event.id to it }
         }.toMap()
     }

@@ -71,7 +71,7 @@ class EventEditViewModel(
     private val recordingsDir: File,
 ) : ViewModel() {
 
-    private val player = AudioPlayer()
+    private val player = AudioPlayer(viewModelScope)
 
     private val eventId = MutableStateFlow(startEventId)
 

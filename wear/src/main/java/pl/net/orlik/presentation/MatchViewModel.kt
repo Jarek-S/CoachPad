@@ -18,6 +18,9 @@ import pl.net.orlik.data.MatchRepository
 import pl.net.orlik.data.VoiceRecording
 import pl.net.orlik.data.matchRepository
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.log.EventLog
+import pl.net.orlik.log.fieldLog
+import pl.net.orlik.log.short
 import pl.net.orlik.recording.AudioRecorder
 import pl.net.orlik.service.AndroidMatchServiceControl
 import pl.net.orlik.service.MatchServiceControl
@@ -34,11 +37,25 @@ sealed interface MatchUiState {
     ) : MatchUiState
 }
 
+/** Why a recording stopped; written to the field log. */
+enum class StopReason {
+    /** Tapped again. */
+    TAP,
+
+    /** The 15 s limit. */
+    LIMIT,
+
+    /** The app left the screen (e.g. the screen was covered); the microphone would go silent. */
+    APP_HIDDEN,
+    MATCH_END,
+}
+
 class MatchViewModel(
     private val repository: MatchRepository,
     private val recorder: AudioRecorder,
     private val recordingsDir: File,
     private val matchService: MatchServiceControl,
+    private val log: EventLog,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<MatchUiState>(MatchUiState.Loading)
@@ -50,6 +67,7 @@ class MatchViewModel(
     init {
         viewModelScope.launch {
             val active = repository.findActiveMatch()
+            log.log("app opened, match in progress: ${active?.matchId?.short() ?: "none"}")
             _state.value = if (active != null) MatchUiState.InProgress(active) else MatchUiState.NoMatch
             matchService.update(active)
             // Republish in case the last change was not delivered to the Data Layer
@@ -63,6 +81,7 @@ class MatchViewModel(
         _state.value = MatchUiState.Loading
         viewModelScope.launch {
             val match = repository.startMatch()
+            log.log("match start ${match.matchId.short()}")
             _state.value = MatchUiState.InProgress(match)
             matchService.update(match)
         }
@@ -74,6 +93,7 @@ class MatchViewModel(
         if (pauseJob?.isActive == true) return
         pauseJob = viewModelScope.launch {
             val updated = if (match.isPaused) repository.resumeMatch(match) else repository.pauseMatch(match)
+            log.log(if (updated.isPaused) "match pause" else "match resume")
             updateInProgress { it.copy(match = updated) }
             matchService.update(updated)
         }
@@ -89,30 +109,37 @@ class MatchViewModel(
     }
 
     fun toggleRecording() {
-        if (recording != null) stopRecording() else startRecording()
+        if (recording != null) stopRecording(StopReason.TAP) else startRecording()
     }
 
     /** Stops and saves a recording in progress, e.g. when the app leaves the screen. */
-    fun stopRecording(): Job? {
+    fun stopRecording(reason: StopReason): Job? {
         val current = recording ?: return null
         recording = null
         val recorded = recorder.stop()
         updateInProgress { it.copy(isRecording = false) }
         val file = File(recordingsDir, current.fileName)
+        val seconds = "%.1f s".format((System.currentTimeMillis() - current.startedAt) / 1_000.0)
         if (!recorded) {
+            log.log("recording ${current.eventId.short()} DISCARDED (nothing recorded), $seconds, stop: $reason")
             file.delete()
             return null
         }
-        return viewModelScope.launch { repository.saveVoiceRecording(current) }
+        log.log("recording ${current.eventId.short()} stop: $reason, $seconds, ${file.length()} B")
+        return viewModelScope.launch {
+            repository.saveVoiceRecording(current)
+            log.log("recording ${current.eventId.short()} saved")
+        }
     }
 
     fun endMatch() {
         val current = _state.value as? MatchUiState.InProgress ?: return
-        val saving = stopRecording()
+        val saving = stopRecording(StopReason.MATCH_END)
         _state.value = MatchUiState.Loading
         viewModelScope.launch {
             saving?.join()
             repository.endMatch(current.match)
+            log.log("match end ${current.match.matchId.short()}")
             _state.value = MatchUiState.NoMatch
             matchService.update(null)
         }
@@ -123,14 +150,16 @@ class MatchViewModel(
         val newRecording = repository.newVoiceRecording(match)
         val file = File(recordingsDir.apply { mkdirs() }, newRecording.fileName)
         try {
-            recorder.start(file) { stopRecording() }
+            recorder.start(file) { stopRecording(StopReason.LIMIT) }
         } catch (e: Exception) {
             Log.e(TAG, "Cannot start recording", e)
+            log.log("recording ${newRecording.eventId.short()} FAILED to start: $e")
             file.delete()
             updateInProgress { it.copy(failedStarts = it.failedStarts + 1) }
             return
         }
         recording = newRecording
+        log.log("recording ${newRecording.eventId.short()} start")
         updateInProgress { it.copy(isRecording = true) }
     }
 
@@ -149,6 +178,7 @@ class MatchViewModel(
                     recorder = AudioRecorder(app),
                     recordingsDir = recordingsDir(app),
                     matchService = AndroidMatchServiceControl(app),
+                    log = fieldLog(app),
                 )
             }
         }

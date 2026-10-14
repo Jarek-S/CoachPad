@@ -7,6 +7,7 @@ import com.google.android.gms.wearable.WearableListenerService
 import kotlinx.coroutines.runBlocking
 import pl.net.orlik.data.matchRepository
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.log.fieldLog
 import pl.net.orlik.shared.sync.Ack
 import pl.net.orlik.shared.sync.DataLayerPaths
 import pl.net.orlik.shared.sync.DeleteMatch
@@ -52,5 +53,6 @@ private fun syncSender(context: Context): SyncSender =
             repository = matchRepository(context),
             transport = DataLayerSyncTransport(context),
             recordingsDir = recordingsDir(context),
+            log = fieldLog(context),
         ).also { sender = it }
     }
