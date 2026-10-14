@@ -27,6 +27,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -49,8 +50,10 @@ import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.ReviewBadge
 import pl.net.orlik.ui.theme.ReviewText
+import pl.net.orlik.ui.theme.stadiumTopAppBarColors
 
 data class MatchesUiState(
     /** Null while loading. */
@@ -79,8 +82,11 @@ class MatchesViewModel(matches: Flow<List<MatchListItem>>, summaries: Flow<Queue
 @Composable
 fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSync: () -> Unit) {
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = OnStadium,
         topBar = {
             TopAppBar(
+                colors = stadiumTopAppBarColors(),
                 title = { Text(stringResource(R.string.matches_title)) },
                 actions = {
                     IconButton(onClick = onOpenSync) {

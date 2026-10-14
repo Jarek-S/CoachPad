@@ -59,11 +59,14 @@ import pl.net.orlik.review.ReviewRow
 import pl.net.orlik.review.formatDuration
 import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.shared.EventType
-import pl.net.orlik.ui.theme.TealDark
-import pl.net.orlik.ui.theme.TealLight
+import pl.net.orlik.ui.theme.GreenDark
+import pl.net.orlik.ui.theme.GreenLight
 import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.OnStadium
+import pl.net.orlik.ui.theme.OnStadiumMuted
 import pl.net.orlik.ui.theme.ReviewBadge
 import pl.net.orlik.ui.theme.ReviewText
+import pl.net.orlik.ui.theme.stadiumTopAppBarColors
 
 /** One match: events waiting for review, then the confirmed ones (collapsed by default). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,8 +93,11 @@ fun MatchReviewScreen(
     val home = state.match?.homeTeam
     val away = state.match?.awayTeam
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = OnStadium,
         topBar = {
             TopAppBar(
+                colors = stadiumTopAppBarColors(),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.back))
@@ -104,7 +110,7 @@ fun MatchReviewScreen(
                             Text(
                                 formatMatchStart(it),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = OnStadiumMuted,
                             )
                         }
                     }
@@ -136,7 +142,7 @@ fun MatchReviewScreen(
                 item {
                     Text(
                         stringResource(R.string.all_reviewed),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = OnStadiumMuted,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
@@ -145,11 +151,11 @@ fun MatchReviewScreen(
             }
             item {
                 TextButton(onClick = { confirmedExpanded = !confirmedExpanded }) {
-                    SectionHeader(stringResource(R.string.confirmed), state.review.confirmed.size, TealDark, TealLight)
+                    SectionHeader(stringResource(R.string.confirmed), state.review.confirmed.size, GreenDark, GreenLight)
                     Icon(
                         painterResource(if (confirmedExpanded) R.drawable.ic_expand_less else R.drawable.ic_expand_more),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = OnStadiumMuted,
                     )
                 }
             }
@@ -195,7 +201,7 @@ private fun TeamNamesDialog(match: Match?, onSave: (String, String) -> Unit, onD
 @Composable
 private fun SectionHeader(title: String, count: Int, countColor: Color, badgeColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(title, style = MaterialTheme.typography.titleMedium, color = OnStadium)
         Text(
             "$count",
             color = countColor,

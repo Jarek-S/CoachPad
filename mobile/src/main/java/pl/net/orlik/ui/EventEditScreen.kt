@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,7 +72,10 @@ import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.review.needsTeam
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.OnStadium
+import pl.net.orlik.ui.theme.OnStadiumMuted
 import pl.net.orlik.ui.theme.ReviewText
+import pl.net.orlik.ui.theme.stadiumTopAppBarColors
 
 private val clockFormat = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -95,8 +100,11 @@ fun EventEditScreen(
     val draft = state.draft
     val row = state.row
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = OnStadium,
         topBar = {
             TopAppBar(
+                colors = stadiumTopAppBarColors(),
                 navigationIcon = {
                     IconButton(onClick = onExit) {
                         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.back))
@@ -139,56 +147,61 @@ fun EventEditScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column {
-                Text(formatPlayTime(row.playTimeMillis), fontSize = 40.sp, fontWeight = FontWeight.SemiBold)
+                Text(formatPlayTime(row.playTimeMillis), fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = OnStadium)
                 state.recordedAt?.let {
                     Text(
                         stringResource(R.string.play_minute_recorded, clockFormat.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = OnStadiumMuted,
                     )
                 }
             }
-            if (row.audioFileRef != null) {
-                Player(state.playing, state.durationMillis, positionMillis, onTogglePlayback)
-            }
-            Field(stringResource(R.string.type_label)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    editableTypes.forEach { type ->
-                        FilterChip(
-                            selected = draft.type == type,
-                            onClick = { onType(type) },
-                            label = { Text(eventTypeName(type)) },
-                            leadingIcon = { EventTypeMark(type) },
-                        )
+            // The fields on a white card, the minute above it on the stadium
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                if (row.audioFileRef != null) {
+                    Player(state.playing, state.durationMillis, positionMillis, onTogglePlayback)
+                }
+                Field(stringResource(R.string.type_label)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        editableTypes.forEach { type ->
+                            FilterChip(
+                                selected = draft.type == type,
+                                onClick = { onType(type) },
+                                label = { Text(eventTypeName(type)) },
+                                leadingIcon = { EventTypeMark(type) },
+                            )
+                        }
                     }
                 }
-            }
-            if (draft.type?.needsTeam != false) {
-                Field(stringResource(R.string.team_label)) {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        Team.entries.forEachIndexed { index, team ->
-                            SegmentedButton(
-                                selected = draft.team == team,
-                                onClick = { onTeam(team) },
-                                shape = SegmentedButtonDefaults.itemShape(index, Team.entries.size),
-                            ) {
-                                Text(teamName(team, state.match?.homeTeam, state.match?.awayTeam))
+                if (draft.type?.needsTeam != false) {
+                    Field(stringResource(R.string.team_label)) {
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            Team.entries.forEachIndexed { index, team ->
+                                SegmentedButton(
+                                    selected = draft.team == team,
+                                    onClick = { onTeam(team) },
+                                    shape = SegmentedButtonDefaults.itemShape(index, Team.entries.size),
+                                ) {
+                                    Text(teamName(team, state.match?.homeTeam, state.match?.awayTeam))
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (draft.type == EventType.GOAL_DISALLOWED) {
-                GoalLink(draft, state.goalCandidates, state.match, onLinkedGoal)
-            }
-            Field(stringResource(R.string.type_note)) {
-                OutlinedTextField(
-                    value = draft.note,
-                    onValueChange = onNote,
-                    placeholder = { Text(stringResource(R.string.note_placeholder)) },
-                    minLines = 2,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (draft.type == EventType.GOAL_DISALLOWED) {
+                    GoalLink(draft, state.goalCandidates, state.match, onLinkedGoal)
+                }
+                Field(stringResource(R.string.type_note)) {
+                    OutlinedTextField(
+                        value = draft.note,
+                        onValueChange = onNote,
+                        placeholder = { Text(stringResource(R.string.note_placeholder)) },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                }
             }
         }
     }
@@ -200,7 +213,7 @@ private fun GoalLink(draft: EventDraft, candidates: List<ReviewRow>, match: Matc
     var choosing by rememberSaveable { mutableStateOf(false) }
     val linked = candidates.firstOrNull { it.eventId == draft.linkedGoalId }
     Field(stringResource(R.string.cancels_goal)) {
-        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp).heightIn(min = 48.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -284,7 +297,7 @@ private fun Player(playing: Boolean, durationMillis: Long?, positionMillis: () -
             delay(100)
         }
     }
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface) {
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,

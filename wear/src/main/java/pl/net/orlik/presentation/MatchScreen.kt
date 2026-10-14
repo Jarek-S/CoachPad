@@ -162,11 +162,12 @@ private fun StartMatch(onClick: () -> Unit, onOpenSettings: () -> Unit) {
         )
         Text(stringResource(R.string.start_match), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         // Settings are reachable only between matches: a match keeps the settings it started with
+        // Green outline like the start button above it
         Box(
             modifier = Modifier
                 .size(SmallButtonSize)
                 .clip(CircleShape)
-                .ring(width = 3.dp, trackColor = OutlineColor)
+                .ring(width = 3.dp, trackColor = MicColor)
                 .clickable(onClick = onOpenSettings),
             contentAlignment = Alignment.Center,
         ) {

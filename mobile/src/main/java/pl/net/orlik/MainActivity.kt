@@ -2,9 +2,9 @@ package pl.net.orlik
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -44,11 +44,16 @@ import pl.net.orlik.ui.MatchesViewModel
 import pl.net.orlik.ui.SyncScreen
 import pl.net.orlik.ui.SyncViewModel
 import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.StadiumBackground
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Light status and navigation bar icons: the stadium behind them is dark
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         val edits = EventEdits(PhoneDatabase.get(this).matchEventDao(), recordingsDir(this))
         // Audio of recordings deleted while the app last closed with "Cofnij" still offered
         lifecycleScope.launch { edits.purgeAll() }
@@ -76,7 +81,7 @@ class MainActivity : ComponentActivity() {
                         if (summary?.matches?.isNotEmpty() == true) navController.navigate(SYNC)
                     }
                 }
-                Box(Modifier.fillMaxSize()) {
+                StadiumBackground(Modifier.fillMaxSize()) {
                     NavHost(navController, startDestination = MATCHES) {
                         composable(MATCHES) {
                             val viewModel: MatchesViewModel = viewModel(factory = MatchesViewModel.factory(application))

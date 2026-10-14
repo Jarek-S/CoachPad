@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +39,8 @@ import pl.net.orlik.shared.sync.PendingMatch
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.SyncStatus
 import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.OnStadium
+import pl.net.orlik.ui.theme.stadiumTopAppBarColors
 
 /** Technical sync screen: what is still waiting on the watch, and the sync buttons. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,8 +52,11 @@ fun SyncScreen(
     onBack: () -> Unit,
 ) {
     Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = OnStadium,
         topBar = {
             TopAppBar(
+                colors = stadiumTopAppBarColors(),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.back))
@@ -92,38 +98,38 @@ private fun SyncContent(
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // Status on a white card; the stadium shows between it and the matches below
         item {
-            Text(stringResource(R.string.pending_title), style = MaterialTheme.typography.titleMedium)
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.pending_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.events_on_phone, state.eventsOnPhone),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    statusText?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    when (val watch = state.watch) {
+                        WatchQueue.Loading -> Text(stringResource(R.string.loading))
+                        WatchQueue.NoWatchData -> Text(stringResource(R.string.no_watch_data))
+                        is WatchQueue.Known -> {
+                            // The list below is what the watch reported at the last contact
+                            if (state.watchConnected == false) {
+                                Text(stringResource(R.string.watch_unavailable_last_known), color = MaterialTheme.colorScheme.error)
+                            }
+                            if (watch.summary.matchInProgress) {
+                                Text(stringResource(R.string.match_in_progress_on_watch), color = MaterialTheme.colorScheme.error)
+                            }
+                            if (watch.summary.matches.isEmpty()) Text(stringResource(R.string.no_pending_matches))
+                        }
+                    }
+                }
+            }
         }
-        item {
-            Text(
-                stringResource(R.string.events_on_phone, state.eventsOnPhone),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        statusText?.let { text -> item { Text(text, style = MaterialTheme.typography.bodyMedium) } }
 
         when (val watch = state.watch) {
-            WatchQueue.Loading -> item { Text(stringResource(R.string.loading)) }
-            WatchQueue.NoWatchData -> item { Text(stringResource(R.string.no_watch_data)) }
+            WatchQueue.Loading, WatchQueue.NoWatchData -> Unit
             is WatchQueue.Known -> {
-                // The list below is what the watch reported at the last contact
-                if (state.watchConnected == false) {
-                    item {
-                        Text(stringResource(R.string.watch_unavailable_last_known), color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                if (watch.summary.matchInProgress) {
-                    item {
-                        Text(
-                            stringResource(R.string.match_in_progress_on_watch),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                if (watch.summary.matches.isEmpty()) {
-                    item { Text(stringResource(R.string.no_pending_matches)) }
-                } else {
+                if (watch.summary.matches.isNotEmpty()) {
                     item {
                         Button(onClick = { onSync(null) }, enabled = state.canSync, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.sync_all))
@@ -155,7 +161,7 @@ private fun syncStatusText(status: SyncStatus): String? = when (status) {
 
 @Composable
 private fun PendingMatchRow(match: PendingMatch, enabled: Boolean, onSync: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(formatMatchStart(match.startedAt), style = MaterialTheme.typography.titleMedium)

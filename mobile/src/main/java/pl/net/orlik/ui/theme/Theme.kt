@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal,
-    onPrimary = Color.White,
-    primaryContainer = TealLight,
-    onPrimaryContainer = TealDark,
-    secondaryContainer = TealPale,
-    onSecondaryContainer = TealDark,
+    primary = Green,
+    onPrimary = Ink,
+    primaryContainer = GreenLight,
+    onPrimaryContainer = GreenDark,
+    secondaryContainer = GreenPale,
+    onSecondaryContainer = GreenDark,
     background = Ground,
     onBackground = Ink,
     surface = Color.White,
@@ -23,7 +23,7 @@ private val LightColorScheme = lightColorScheme(
 
 /**
  * Light only for now (the review colors are designed on a light ground), and fixed colors
- * instead of wallpaper-based dynamic color, so the teal stays recognisable.
+ * instead of wallpaper-based dynamic color, so the green stays recognisable.
  */
 @Composable
 fun MatchNotesTheme(content: @Composable () -> Unit) {

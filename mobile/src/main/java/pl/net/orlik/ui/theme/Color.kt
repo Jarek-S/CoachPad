@@ -2,12 +2,13 @@ package pl.net.orlik.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Teal: buttons and selections. 4.5:1 against white text (WCAG AA).
-val Teal = Color(0xFF0E857B)
-val TealDark = Color(0xFF115E59)
-val TealLight = Color(0xFFCCFBF1)
-val TealPale = Color(0xFFF0FDFA)
-val TealTrack = Color(0xFF99F6E4)
+// Dark pastel green #03C03C (provisional, docs section 11): buttons and selections. Too light for
+// white text (2.4:1), so text and icons on it are dark (6.8:1).
+val Green = Color(0xFF03C03C)
+val GreenDark = Color(0xFF01722A)
+val GreenLight = Color(0xFFD9F6E2)
+val GreenPale = Color(0xFFF2FCF5)
+val GreenTrack = Color(0xFF9BE6AE)
 
 /** "Do przejrzenia": dark amber text on a light amber badge. */
 val ReviewText = Color(0xFF7A4A00)

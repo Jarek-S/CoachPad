@@ -23,6 +23,7 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import pl.net.orlik.presentation.theme.MatchNotesTheme
+import pl.net.orlik.presentation.theme.StadiumBackground
 import pl.net.orlik.settings.SettingsScreen
 import pl.net.orlik.settings.SettingsViewModel
 
@@ -67,10 +68,10 @@ fun WearApp() {
         AppScaffold {
             SwipeDismissableNavHost(navController = navController, startDestination = ROUTE_MATCH) {
                 composable(ROUTE_MATCH) {
-                    MatchRoute(onOpenSettings = { navController.navigate(ROUTE_SETTINGS) })
+                    StadiumBackground { MatchRoute(onOpenSettings = { navController.navigate(ROUTE_SETTINGS) }) }
                 }
                 composable(ROUTE_SETTINGS) {
-                    SettingsRoute()
+                    StadiumBackground { SettingsRoute() }
                 }
             }
         }
