@@ -1,0 +1,24 @@
+<resources>
+    <string name="start_match">Start meczu</string>
+    <string name="end_match">Koniec meczu</string>
+    <string name="pause_match">Pauza</string>
+    <string name="resume_match">Wznów</string>
+    <string name="record">Nagraj</string>
+    <string name="stop_recording">Zatrzymaj nagranie</string>
+    <string name="confirm_shift">Potwierdź zmianę</string>
+    <!-- Notification of the shift timer service -->
+    <string name="match_channel">Mecz</string>
+    <string name="match_in_progress">Mecz w toku</string>
+    <string name="shift_alarm_channel">Alarm zmiany</string>
+    <!-- Labels under the small round buttons -->
+    <string name="pause_label">pauza</string>
+    <string name="resume_label">wznów</string>
+    <string name="end_label">koniec</string>
+    <!-- Settings -->
+    <string name="settings">Ustawienia</string>
+    <string name="shift_timer">Timer zmian</string>
+    <string name="shift_interval">Interwał</string>
+    <string name="minutes_value">%1$d min</string>
+    <string name="shorter_interval">Krótszy interwał</string>
+    <string name="longer_interval">Dłuższy interwał</string>
+</resources>

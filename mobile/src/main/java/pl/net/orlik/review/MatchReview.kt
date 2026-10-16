@@ -42,29 +42,38 @@ data class MatchReview(
 /** Splits a match's events into the two review sections, each in time order. */
 fun matchReviewOf(events: List<MatchEvent>): MatchReview {
     val sorted = events.filter { it.status != ReviewStatus.DELETED }.sortedBy { it.recordedAt }
-    // Without MATCH_START (not synced yet) minutes count from the oldest event the phone has
-    val start = (sorted.firstOrNull { it.type == EventType.MATCH_START } ?: sorted.firstOrNull())?.recordedAt ?: 0
-    val pauses = pausesFrom(sorted, type = { it.type }, at = { it.recordedAt })
+    val playTime = playClockOf(sorted)
     val cancelled = cancelledGoals(sorted)
     val byId = sorted.associateBy { it.id }
     val rows = sorted.map { event ->
         val cancelledGoal = event.linkedGoalEventId?.takeIf { event.type == EventType.GOAL_DISALLOWED && it in cancelled }
         event.status to ReviewRow(
             eventId = event.id,
-            playTimeMillis = playTimeMillis(event.recordedAt, start, pauses),
+            playTimeMillis = playTime(event.recordedAt),
             type = event.type,
             team = event.team,
             note = event.rawTranscript?.takeIf { it.isNotBlank() },
             audioFileRef = event.audioFileRef,
             hint = hintOf(event, linked = cancelledGoal != null),
             cancelled = event.id in cancelled,
-            cancelsGoalAt = cancelledGoal?.let { playTimeMillis(byId.getValue(it).recordedAt, start, pauses) },
+            cancelsGoalAt = cancelledGoal?.let { playTime(byId.getValue(it).recordedAt) },
         )
     }
     return MatchReview(
         toReview = rows.filter { it.first == ReviewStatus.TO_REVIEW }.map { it.second },
         confirmed = rows.filter { it.first == ReviewStatus.CONFIRMED }.map { it.second },
     )
+}
+
+/**
+ * Play time at a moment of the match whose not deleted events are [sorted] by time: since
+ * MATCH_START minus pauses. Without MATCH_START (not synced yet) it counts from the oldest event
+ * the phone has.
+ */
+fun playClockOf(sorted: List<MatchEvent>): (Long) -> Long {
+    val start = (sorted.firstOrNull { it.type == EventType.MATCH_START } ?: sorted.firstOrNull())?.recordedAt ?: 0
+    val pauses = pausesFrom(sorted, type = { it.type }, at = { it.recordedAt })
+    return { at -> playTimeMillis(at, start, pauses) }
 }
 
 /** Goals and cards belong to a team; notes and structural events do not. */

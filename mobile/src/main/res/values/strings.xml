@@ -1,88 +1,109 @@
 <resources>
-    <string name="app_name">MatchNotes</string>
-    <string name="matches_title">Mecze</string>
-    <string name="sync_title">Synchronizacja</string>
-    <string name="back">Wstecz</string>
-    <string name="no_matches">Na telefonie nie ma jeszcze meczów. Zsynchronizuj zegarek.</string>
-    <string name="match">Mecz</string>
-    <string name="team_home">Gospodarze</string>
-    <string name="team_away">Goście</string>
-    <string name="team_names">Nazwy drużyn</string>
-    <string name="reviewed">Przejrzany</string>
-    <string name="to_review">Do przejrzenia</string>
-    <string name="confirmed">Potwierdzone</string>
-    <string name="all_reviewed">Wszystko przejrzane.</string>
-    <string name="hint_describe">Bez opisu — odsłuchaj i uzupełnij</string>
-    <string name="hint_missing_team">Brak drużyny</string>
-    <string name="no_recording">bez nagrania</string>
-    <string name="play_recording">Odtwórz nagranie</string>
-    <string name="stop_recording">Zatrzymaj nagranie</string>
-    <string name="type_match_start">Początek meczu</string>
-    <string name="type_match_end">Koniec meczu</string>
-    <string name="type_match_pause">Pauza</string>
-    <string name="type_match_resume">Wznowienie</string>
-    <string name="type_goal">Gol</string>
-    <string name="type_goal_disallowed">Gol nieuznany</string>
-    <string name="type_yellow_card">Żółta kartka</string>
-    <string name="type_red_card">Czerwona kartka</string>
-    <string name="type_note">Notatka</string>
-    <string name="pending_title">Oczekują na synchronizację</string>
-    <string name="loading">Wczytywanie…</string>
-    <string name="no_watch_data">Brak danych z zegarka. Uruchom aplikację na zegarku.</string>
-    <string name="no_pending_matches">Brak zaległych meczów.</string>
-    <string name="match_in_progress_on_watch">Mecz w toku na zegarku</string>
-    <string name="events_on_phone">Zdarzenia na telefonie: %d</string>
-    <string name="sync">Synchronizuj</string>
-    <string name="sync_all">Synchronizuj wszystko</string>
-    <string name="sync_running">Synchronizacja… odebrano: %d</string>
-    <string name="sync_done">Synchronizacja zakończona, odebrano: %d</string>
-    <string name="sync_rejected">Zegarek odrzucił synchronizację: mecz w toku</string>
-    <string name="sync_watch_unavailable">Zegarek niedostępny</string>
-    <string name="watch_unavailable_last_known">Zegarek niedostępny — stan z ostatniego połączenia</string>
-    <string name="delete">Usuń</string>
-    <string name="cancel">Anuluj</string>
-    <string name="delete_match_title">Usunąć mecz z zegarka?</string>
-    <string name="delete_match_text">%1$s, %2$s. Zdarzenia i nagrania tego meczu, które są jeszcze na zegarku, zostaną usunięte. Tej operacji nie można cofnąć.</string>
-    <string name="sync_no_response">Zegarek przestał odpowiadać. Dane zostały na zegarku — spróbuj ponownie.</string>
+    <!-- English is the default; Polish in values-pl -->
+    <string name="app_name" translatable="false">MatchNotes</string>
+    <!-- java.time pattern, e.g. "Saturday, 11 October, 14:00" -->
+    <string name="match_start_format">EEEE, d MMMM, HH:mm</string>
+    <string name="matches_title">Matches</string>
+    <string name="sync_title">Sync</string>
+    <string name="back">Back</string>
+    <string name="no_matches">There are no matches on the phone yet. Sync the watch.</string>
+    <string name="match">Match</string>
+    <string name="team_home">Home</string>
+    <string name="team_away">Away</string>
+    <string name="team_names">Team names</string>
+    <string name="reviewed">Reviewed</string>
+    <string name="to_review">To review</string>
+    <string name="confirmed">Confirmed</string>
+    <string name="all_reviewed">All reviewed.</string>
+    <string name="hint_describe">No description — listen and fill in</string>
+    <string name="hint_missing_team">No team</string>
+    <string name="no_recording">no recording</string>
+    <string name="play_recording">Play recording</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="type_match_start">Kick-off</string>
+    <string name="type_match_end">Full time</string>
+    <string name="type_match_pause">Pause</string>
+    <string name="type_match_resume">Resume</string>
+    <string name="type_goal">Goal</string>
+    <string name="type_goal_disallowed">Disallowed goal</string>
+    <string name="type_yellow_card">Yellow card</string>
+    <string name="type_red_card">Red card</string>
+    <string name="type_note">Note</string>
+    <string name="pending_title">Waiting to sync</string>
+    <string name="loading">Loading…</string>
+    <string name="no_watch_data">No data from the watch. Open the app on the watch.</string>
+    <string name="no_pending_matches">No matches waiting.</string>
+    <string name="match_in_progress_on_watch">Match in progress on the watch</string>
+    <string name="events_on_phone">Events on the phone: %d</string>
+    <string name="sync">Sync</string>
+    <string name="sync_all">Sync all</string>
+    <string name="sync_running">Syncing… received: %d</string>
+    <string name="sync_done">Sync finished, received: %d</string>
+    <string name="sync_rejected">The watch refused to sync: match in progress</string>
+    <string name="sync_watch_unavailable">Watch unavailable</string>
+    <string name="watch_unavailable_last_known">Watch unavailable — state from the last connection</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete_match_title">Delete the match from the watch?</string>
+    <string name="delete_match_text">%1$s, %2$s. Events and recordings of this match still on the watch will be deleted. This cannot be undone.</string>
+    <string name="sync_no_response">The watch stopped responding. The data is still on the watch — try again.</string>
 
-    <string name="edit_position">Do przejrzenia · %1$d z %2$d</string>
-    <string name="play_minute_recorded">minuta gry · nagrano o %s</string>
-    <string name="type_label">Typ</string>
-    <string name="team_label">Drużyna</string>
-    <string name="note_placeholder">Np. kto strzelił, kto asystował</string>
-    <string name="skip">Pomiń</string>
-    <string name="confirm_next">Zatwierdź i dalej</string>
-    <string name="save">Zapisz</string>
-    <string name="choose_type">Wybierz typ zdarzenia</string>
-    <string name="choose_team">Wybierz drużynę</string>
-    <string name="delete_recording">Usuń nagranie</string>
-    <string name="recording_deleted">Usunięto nagranie</string>
-    <string name="undo">Cofnij</string>
-    <string name="cancels_goal">Unieważnia gol</string>
-    <string name="change">Zmień</string>
-    <string name="link_choose_team">Wybierz drużynę, aby powiązać gol</string>
-    <string name="link_no_goal">Nie znaleziono wcześniejszego gola tej drużyny</string>
-    <string name="link_none">Bez powiązania</string>
-    <string name="hint_no_goal">Nie znaleziono gola do powiązania</string>
-    <string name="cancels_goal_at">unieważnia gol z %s</string>
-    <string name="not_counted">nie liczy się do wyniku</string>
+    <string name="edit_position">To review · %1$d of %2$d</string>
+    <string name="play_minute_recorded">match time · recorded at %s</string>
+    <string name="type_label">Type</string>
+    <string name="team_label">Team</string>
+    <string name="note_placeholder">E.g. who scored, who assisted</string>
+    <string name="skip">Skip</string>
+    <string name="confirm_next">Confirm and next</string>
+    <string name="save">Save</string>
+    <string name="choose_type">Choose the event type</string>
+    <string name="choose_team">Choose the team</string>
+    <string name="delete_recording">Delete recording</string>
+    <string name="recording_deleted">Recording deleted</string>
+    <string name="undo">Undo</string>
+    <string name="cancels_goal">Cancels goal</string>
+    <string name="change">Change</string>
+    <string name="link_choose_team">Choose the team to link a goal</string>
+    <string name="link_no_goal">No earlier goal of this team found</string>
+    <string name="link_none">No link</string>
+    <string name="hint_no_goal">No goal found to link</string>
+    <string name="cancels_goal_at">cancels the goal at %s</string>
+    <string name="not_counted">does not count towards the score</string>
+
+    <!-- Match text to share; java.time pattern of its date, e.g. "Sunday, 11 October 2026, 14:00" -->
+    <string name="share_date_format">EEEE, d MMMM yyyy, HH:mm</string>
+    <!-- %s: minute of the disallowed goal, e.g. "42'" -->
+    <string name="share_not_counted">does not count (disallowed, %s)</string>
+
+    <!-- CSV export: column names, in this order and number -->
+    <string-array name="csv_columns">
+        <item>match</item>
+        <item>date</item>
+        <item>minute</item>
+        <item>play_time</item>
+        <item>time</item>
+        <item>type</item>
+        <item>team</item>
+        <item>player</item>
+        <item>assist</item>
+        <item>note</item>
+        <item>counts</item>
+        <item>recording</item>
+    </string-array>
+    <!-- CSV export: whether a goal counts towards the score -->
+    <string name="csv_yes">yes</string>
+    <string name="csv_no">no</string>
 
     <plurals name="recordings">
-        <item quantity="one">%d nagranie</item>
-        <item quantity="few">%d nagrania</item>
-        <item quantity="many">%d nagrań</item>
-        <item quantity="other">%d nagrania</item>
+        <item quantity="one">%d recording</item>
+        <item quantity="other">%d recordings</item>
     </plurals>
     <plurals name="to_review_count">
-        <item quantity="one">%d do przejrzenia</item>
-        <item quantity="few">%d do przejrzenia</item>
-        <item quantity="many">%d do przejrzenia</item>
-        <item quantity="other">%d do przejrzenia</item>
+        <item quantity="one">%d to review</item>
+        <item quantity="other">%d to review</item>
     </plurals>
     <plurals name="events">
-        <item quantity="one">%d zdarzenie</item>
-        <item quantity="few">%d zdarzenia</item>
-        <item quantity="many">%d zdarzeń</item>
-        <item quantity="other">%d zdarzenia</item>
+        <item quantity="one">%d event</item>
+        <item quantity="other">%d events</item>
     </plurals>
 </resources>

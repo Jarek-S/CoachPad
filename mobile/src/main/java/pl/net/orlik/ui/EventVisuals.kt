@@ -1,5 +1,6 @@
 package pl.net.orlik.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -9,6 +10,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -23,11 +25,13 @@ import pl.net.orlik.ui.theme.Disallowed
 import pl.net.orlik.ui.theme.RedCard
 import pl.net.orlik.ui.theme.YellowCard
 
-private val matchStartFormat = DateTimeFormatter.ofPattern("EEEE, d MMMM, HH:mm", Locale.forLanguageTag("pl"))
-
-/** E.g. "sobota, 11 października, 14:00". */
+/** E.g. "sobota, 11 października, 14:00" or "Saturday, 11 October, 14:00", in the app's language. */
+@Composable
 fun formatMatchStart(epochMillis: Long): String =
-    matchStartFormat.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+    formatMatchStart(epochMillis, stringResource(R.string.match_start_format), LocalConfiguration.current.locales[0])
+
+fun formatMatchStart(epochMillis: Long, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
 /** The team's name set for the match, or "Gospodarze" / "Goście" until one is set. */
 @Composable
@@ -46,7 +50,10 @@ fun matchTitle(homeTeam: String?, awayTeam: String?): String =
     }
 
 @Composable
-fun eventTypeName(type: EventType): String = stringResource(
+fun eventTypeName(type: EventType): String = stringResource(eventTypeNameRes(type))
+
+@StringRes
+fun eventTypeNameRes(type: EventType): Int =
     when (type) {
         EventType.MATCH_START -> R.string.type_match_start
         EventType.MATCH_END -> R.string.type_match_end
@@ -57,8 +64,7 @@ fun eventTypeName(type: EventType): String = stringResource(
         EventType.YELLOW_CARD -> R.string.type_yellow_card
         EventType.RED_CARD -> R.string.type_red_card
         EventType.NOTE -> R.string.type_note
-    },
-)
+    }
 
 /** Small mark in front of the type name; structural events have none. */
 @Composable
