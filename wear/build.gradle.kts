@@ -72,4 +72,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    constraints {
+        // androidx.test.ext:junit needs 1.2.0, and AGP makes the androidTest classpath use exactly
+        // the app's versions (1.1.0 via profileinstaller), so lint could not resolve it
+        implementation(libs.androidx.concurrent.futures)
+    }
 }
