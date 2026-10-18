@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import pl.net.orlik.audio.AudioDurations
@@ -18,12 +19,15 @@ import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.data.TranscriptDao
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.export.MatchExport
 import pl.net.orlik.export.matchExportOf
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.matchReviewOf
+import pl.net.orlik.stt.Transcriber
+import pl.net.orlik.stt.TranscriptionStatus
 
 data class MatchReviewUiState(
     val match: Match? = null,
@@ -34,11 +38,24 @@ data class MatchReviewUiState(
     val durations: Map<String, Long> = emptyMap(),
     /** Event whose recording is playing. */
     val playingId: String? = null,
+    val stt: SttUiState = SttUiState(),
+)
+
+/** Speech recognition for this match: what "Rozpoznaj" offers and how far it got. */
+data class SttUiState(
+    /** On in settings, with a key. */
+    val available: Boolean = false,
+    /** Recordings under "Do przejrzenia" not recognised yet. */
+    val untranscribed: Int = 0,
+    /** Idle unless running or failed for this match. */
+    val status: TranscriptionStatus = TranscriptionStatus.Idle,
 )
 
 class MatchReviewViewModel(
     private val matchId: String,
     private val dao: MatchEventDao,
+    transcripts: TranscriptDao,
+    private val transcriber: Transcriber,
     private val recordingsDir: File,
 ) : ViewModel() {
 
@@ -55,18 +72,33 @@ class MatchReviewViewModel(
         }.toMap()
     }
 
+    private val stt = combine(
+        flow { emit(transcriber.available()) },
+        transcripts.untranscribedCount(matchId),
+        transcriber.status,
+    ) { available, untranscribed, status ->
+        val ours = when (status) {
+            is TranscriptionStatus.Running -> status.matchId == matchId
+            is TranscriptionStatus.Failed -> status.matchId == matchId
+            TranscriptionStatus.Idle -> false
+        }
+        SttUiState(available, untranscribed, if (ours) status else TranscriptionStatus.Idle)
+    }
+
     val state: StateFlow<MatchReviewUiState> = combine(
         dao.match(matchId),
         events,
         durations,
         player.playingId,
-    ) { match, list, durations, playingId ->
+        stt,
+    ) { match, list, durations, playingId, stt ->
         MatchReviewUiState(
             match = match,
             startedAt = list.minOfOrNull { it.recordedAt },
             review = matchReviewOf(list),
             durations = durations,
             playingId = playingId,
+            stt = stt,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchReviewUiState())
 
@@ -76,6 +108,9 @@ class MatchReviewViewModel(
     }
 
     fun stopPlayback() = player.stop()
+
+    /** "Rozpoznaj nagrania": recordings of this match not recognised yet. */
+    fun transcribe() = transcriber.start(matchId)
 
     /** The match as it is now, for "Udostępnij". */
     suspend fun export(): MatchExport = matchExportOf(dao.match(matchId).first() ?: Match(matchId), events.first())
@@ -87,7 +122,8 @@ class MatchReviewViewModel(
     companion object {
         fun factory(app: Application, matchId: String): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                MatchReviewViewModel(matchId, PhoneDatabase.get(app).matchEventDao(), recordingsDir(app))
+                val db = PhoneDatabase.get(app)
+                MatchReviewViewModel(matchId, db.matchEventDao(), db.transcriptDao(), Transcriber.get(app), recordingsDir(app))
             }
         }
     }

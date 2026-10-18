@@ -76,6 +76,9 @@ data class MatchEvent(
     /** The assist of a goal. */
     @ColumnInfo(name = "assist_name")
     val assistName: String? = null,
+
+    /** What speech-to-text heard in the recording; null until recognised ("" when it heard nothing). */
+    val transcript: String? = null,
 )
 
 /** Structural events need no review; everything else waits under "Do przejrzenia". */

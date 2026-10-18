@@ -26,6 +26,7 @@ import pl.net.orlik.shared.sync.DeleteMatch
 import pl.net.orlik.shared.sync.EventMetadata
 import pl.net.orlik.shared.sync.SyncCodec
 import pl.net.orlik.shared.sync.SyncRequest
+import pl.net.orlik.stt.Transcriber
 
 sealed interface SyncStatus {
     data object Idle : SyncStatus
@@ -50,6 +51,7 @@ class PhoneSync private constructor(context: Context) {
     private val channelClient = Wearable.getChannelClient(context)
     private val nodeClient = Wearable.getNodeClient(context)
     private val receiver = EventReceiver(PhoneDatabase.get(context).matchEventDao(), recordingsDir(context))
+    private val transcriber = Transcriber.get(context)
     // A failure is only logged: no ACK goes out, the watch keeps the event and the watchdog reports it
     private val scope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.w(TAG, "Sync step failed", e) },
@@ -165,6 +167,8 @@ class PhoneSync private constructor(context: Context) {
         watchdog?.cancel()
         watchdog = null
         _status.value = status
+        // New recordings go to speech-to-text at once, when it is on (design doc, section 4)
+        if (status is SyncStatus.Done || status is SyncStatus.NoResponse) transcriber.startPending()
     }
 
     companion object {

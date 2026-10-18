@@ -44,6 +44,8 @@ import pl.net.orlik.ui.MatchReviewScreen
 import pl.net.orlik.ui.MatchReviewViewModel
 import pl.net.orlik.ui.MatchesScreen
 import pl.net.orlik.ui.MatchesViewModel
+import pl.net.orlik.ui.SettingsScreen
+import pl.net.orlik.ui.SettingsViewModel
 import pl.net.orlik.ui.SyncScreen
 import pl.net.orlik.ui.SyncViewModel
 import pl.net.orlik.ui.theme.MatchNotesTheme
@@ -93,6 +95,22 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onOpenMatch = { navController.navigate("$MATCH/$it") },
                                 onOpenSync = { navController.navigate(SYNC) },
+                                onOpenSettings = { navController.navigate(SETTINGS) },
+                            )
+                        }
+                        composable(SETTINGS) {
+                            val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(application))
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            SettingsScreen(
+                                state = state,
+                                onBack = { navController.popBackStack() },
+                                onSttEnabled = viewModel::setSttEnabled,
+                                onDraft = viewModel::setDraft,
+                                onSaveKey = viewModel::saveKey,
+                                onCheckKey = viewModel::checkKey,
+                                onChangeKey = viewModel::changeKey,
+                                onCancelChange = viewModel::cancelChange,
+                                onDeleteKey = viewModel::deleteKey,
                             )
                         }
                         composable(SYNC) {
@@ -118,6 +136,7 @@ class MainActivity : ComponentActivity() {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$EVENT/$it")
                                 },
+                                onTranscribe = viewModel::transcribe,
                                 onOpenLineup = {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$LINEUP")
@@ -187,6 +206,7 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val MATCHES = "matches"
         const val SYNC = "sync"
+        const val SETTINGS = "settings"
         const val MATCH = "match"
         const val MATCH_ID = "matchId"
         const val LINEUP = "lineup"

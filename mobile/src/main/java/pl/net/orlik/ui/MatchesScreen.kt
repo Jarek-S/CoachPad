@@ -80,7 +80,7 @@ class MatchesViewModel(matches: Flow<List<MatchListItem>>, summaries: Flow<Queue
 /** Start screen: the matches on the phone, and the way to sync more from the watch. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSync: () -> Unit) {
+fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSync: () -> Unit, onOpenSettings: () -> Unit) {
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = OnStadium,
@@ -93,6 +93,9 @@ fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSy
                         BadgedBox(badge = { if (state.pendingOnWatch > 0) Badge { Text("${state.pendingOnWatch}") } }) {
                             Icon(painterResource(R.drawable.ic_sync), stringResource(R.string.sync_title))
                         }
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings_title))
                     }
                 },
             )
@@ -181,6 +184,7 @@ private fun MatchesScreenPreview() {
             ),
             onOpenMatch = {},
             onOpenSync = {},
+            onOpenSettings = {},
         )
     }
 }

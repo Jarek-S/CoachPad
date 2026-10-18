@@ -120,6 +120,33 @@
     <string name="remove_player">Remove %s</string>
     <string name="outside_lineup">Use “%s” (not in the lineup)</string>
 
+    <!-- Settings: speech recognition (phase 6) -->
+    <string name="settings_title">Settings</string>
+    <string name="stt_title">Speech recognition (AI)</string>
+    <string name="stt_description">Recordings are sent to OpenAI Whisper and turned into text. Billed by usage on your OpenAI account.</string>
+    <string name="api_key_label">OpenAI API key</string>
+    <string name="api_key_hint">Create it at platform.openai.com → API keys, copy it and paste it here.</string>
+    <string name="paste">Paste</string>
+    <string name="api_key_saved">Saved key: %s</string>
+    <string name="check">Check</string>
+    <string name="key_works">The key works.</string>
+    <string name="key_rejected">OpenAI rejected the key. Check it and paste it again.</string>
+    <string name="key_rate_limited">The key works, but OpenAI reports a limit or no credit on the account.</string>
+    <string name="key_not_checked">No connection: the key is saved but not checked.</string>
+    <string name="key_service_error">OpenAI did not answer properly: the key is saved, check it later.</string>
+
+    <!-- Speech recognition in the match review -->
+    <string name="heard">Heard: “%s”</string>
+    <string name="transcribe">Recognise</string>
+    <string name="transcribing">Recognising recordings… %1$d of %2$d</string>
+    <string name="retry">Retry</string>
+    <string name="stt_failed_unauthorized">Recognition stopped: OpenAI rejected the key. Check it in settings.</string>
+    <string name="stt_failed_rate_limited">Recognition stopped: a limit or no credit on the OpenAI account.</string>
+    <string name="stt_failed_network">Recognition stopped: no connection.</string>
+    <string name="stt_failed_service">Recognition stopped: OpenAI did not answer properly.</string>
+    <!-- Words said in recordings, given to speech recognition so it spells them right; comma separated -->
+    <string name="stt_hint_words">goal, assist, yellow card, red card, disallowed goal, note</string>
+
     <plurals name="recordings">
         <item quantity="one">%d recording</item>
         <item quantity="other">%d recordings</item>
@@ -135,5 +162,9 @@
     <plurals name="export_unreviewed_title">
         <item quantity="one">%d event not reviewed</item>
         <item quantity="other">%d events not reviewed</item>
+    </plurals>
+    <plurals name="untranscribed">
+        <item quantity="one">%d recording not recognised</item>
+        <item quantity="other">%d recordings not recognised</item>
     </plurals>
 </resources>

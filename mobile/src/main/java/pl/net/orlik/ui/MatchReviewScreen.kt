@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,10 +61,14 @@ import pl.net.orlik.review.ReviewRow
 import pl.net.orlik.review.formatDuration
 import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.shared.EventType
+import pl.net.orlik.stt.SttError
+import pl.net.orlik.stt.TranscriptionStatus
+import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.GreenLight
 import pl.net.orlik.ui.theme.MatchNotesTheme
 import pl.net.orlik.ui.theme.OnStadium
+import pl.net.orlik.ui.theme.OnStadiumHint
 import pl.net.orlik.ui.theme.OnStadiumMuted
 import pl.net.orlik.ui.theme.ReviewBadge
 import pl.net.orlik.ui.theme.ReviewText
@@ -77,6 +83,7 @@ fun MatchReviewScreen(
     onTogglePlayback: (eventId: String, audioFileRef: String) -> Unit,
     onOpenEvent: (eventId: String) -> Unit,
     onOpenLineup: () -> Unit,
+    onTranscribe: () -> Unit,
     onExport: (ExportFormat) -> Unit,
 ) {
     var confirmedExpanded by rememberSaveable { mutableStateOf(false) }
@@ -142,6 +149,9 @@ fun MatchReviewScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (state.stt.available || state.stt.status != TranscriptionStatus.Idle) {
+                item { TranscriptionBar(state.stt, onTranscribe) }
+            }
             item {
                 SectionHeader(stringResource(R.string.to_review), state.review.toReview.size, ReviewText, ReviewBadge)
             }
@@ -319,6 +329,54 @@ private fun EventRow(
             playersText(row.player, row.assist)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             // A description waiting for review takes the place of the note
             if (row.hint != ReviewHint.DESCRIBE) row.note?.let { MutedText("„$it”") }
+            row.transcript?.let { MutedText(stringResource(R.string.heard, it)) }
+        }
+    }
+}
+
+/** "Rozpoznaj nagrania (12)", the progress while it runs, or why it stopped. */
+@Composable
+private fun TranscriptionBar(stt: SttUiState, onTranscribe: () -> Unit) {
+    val status = stt.status
+    if (status == TranscriptionStatus.Idle && stt.untranscribed == 0) return
+    GlassPanel(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when (status) {
+                is TranscriptionStatus.Running -> {
+                    CircularProgressIndicator(Modifier.size(20.dp), color = OnStadium, strokeWidth = 2.dp)
+                    Text(stringResource(R.string.transcribing, status.done + 1, status.total), color = OnStadium)
+                }
+                is TranscriptionStatus.Failed -> {
+                    Text(
+                        stringResource(
+                            when (status.error) {
+                                SttError.UNAUTHORIZED -> R.string.stt_failed_unauthorized
+                                SttError.RATE_LIMITED -> R.string.stt_failed_rate_limited
+                                SttError.NETWORK -> R.string.stt_failed_network
+                                SttError.SERVICE -> R.string.stt_failed_service
+                            },
+                        ),
+                        color = OnStadiumHint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (stt.available && stt.untranscribed > 0) {
+                        TextButton(onClick = onTranscribe) { Text(stringResource(R.string.retry), color = OnStadium) }
+                    }
+                }
+                TranscriptionStatus.Idle -> {
+                    Text(
+                        pluralStringResource(R.plurals.untranscribed, stt.untranscribed, stt.untranscribed),
+                        color = OnStadium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = onTranscribe) { Text(stringResource(R.string.transcribe)) }
+                }
+            }
         }
     }
 }
@@ -383,6 +441,7 @@ private fun MatchReviewScreenPreview() {
             onTogglePlayback = { _, _ -> },
             onOpenEvent = {},
             onOpenLineup = {},
+            onTranscribe = {},
             onExport = {},
         )
     }

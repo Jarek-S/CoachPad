@@ -118,6 +118,33 @@
     <string name="remove_player">Usuń: %s</string>
     <string name="outside_lineup">Wpisz „%s” spoza składu</string>
 
+    <!-- Settings: speech recognition (phase 6) -->
+    <string name="settings_title">Ustawienia</string>
+    <string name="stt_title">Rozpoznawanie mowy (AI)</string>
+    <string name="stt_description">Nagrania są wysyłane do OpenAI Whisper i zamieniane na tekst. Opłaty według zużycia na Twoim koncie OpenAI.</string>
+    <string name="api_key_label">Klucz API OpenAI</string>
+    <string name="api_key_hint">Utworzysz go na platform.openai.com → API keys; skopiuj go i wklej tutaj.</string>
+    <string name="paste">Wklej</string>
+    <string name="api_key_saved">Zapisany klucz: %s</string>
+    <string name="check">Sprawdź</string>
+    <string name="key_works">Klucz działa.</string>
+    <string name="key_rejected">OpenAI odrzuciło klucz. Sprawdź go i wklej ponownie.</string>
+    <string name="key_rate_limited">Klucz działa, ale OpenAI zgłasza limit albo brak środków na koncie.</string>
+    <string name="key_not_checked">Brak połączenia: klucz zapisany, ale niesprawdzony.</string>
+    <string name="key_service_error">OpenAI nie odpowiedziało poprawnie: klucz zapisany, sprawdź go później.</string>
+
+    <!-- Speech recognition in the match review -->
+    <string name="heard">Rozpoznano: „%s”</string>
+    <string name="transcribe">Rozpoznaj</string>
+    <string name="transcribing">Rozpoznawanie nagrań… %1$d z %2$d</string>
+    <string name="retry">Ponów</string>
+    <string name="stt_failed_unauthorized">Rozpoznawanie przerwane: OpenAI odrzuciło klucz. Sprawdź go w ustawieniach.</string>
+    <string name="stt_failed_rate_limited">Rozpoznawanie przerwane: limit albo brak środków na koncie OpenAI.</string>
+    <string name="stt_failed_network">Rozpoznawanie przerwane: brak połączenia.</string>
+    <string name="stt_failed_service">Rozpoznawanie przerwane: OpenAI nie odpowiedziało poprawnie.</string>
+    <!-- Words said in recordings, given to speech recognition so it spells them right; comma separated -->
+    <string name="stt_hint_words">gol, asysta, żółta kartka, czerwona kartka, gol nieuznany, notatka</string>
+
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>
         <item quantity="few">%d nagrania</item>
@@ -141,5 +168,11 @@
         <item quantity="few">%d zdarzenia nieprzejrzane</item>
         <item quantity="many">%d zdarzeń nieprzejrzanych</item>
         <item quantity="other">%d zdarzenia nieprzejrzanego</item>
+    </plurals>
+    <plurals name="untranscribed">
+        <item quantity="one">%d nagranie nierozpoznane</item>
+        <item quantity="few">%d nagrania nierozpoznane</item>
+        <item quantity="many">%d nagrań nierozpoznanych</item>
+        <item quantity="other">%d nagrania nierozpoznanego</item>
     </plurals>
 </resources>

@@ -35,6 +35,8 @@ data class ReviewRow(
     /** The scorer of a goal, the player of a card. */
     val player: String? = null,
     val assist: String? = null,
+    /** What speech-to-text heard; null when not recognised or nothing was heard. */
+    val transcript: String? = null,
 )
 
 data class MatchReview(
@@ -58,6 +60,7 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
             note = event.rawTranscript?.takeIf { it.isNotBlank() },
             player = event.playerName,
             assist = event.assistName,
+            transcript = event.transcript?.takeIf { it.isNotBlank() },
             audioFileRef = event.audioFileRef,
             hint = hintOf(event, linked = cancelledGoal != null),
             cancelled = event.id in cancelled,
