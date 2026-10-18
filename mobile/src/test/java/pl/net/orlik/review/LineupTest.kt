@@ -44,4 +44,35 @@ class LineupTest {
             .sortedWith(lineupOrder)
         assertEquals(listOf("Kuba", "Kuba S.", "adam", "Piotrek"), sorted.map { it.name })
     }
+
+    private val lineup = listOf(
+        LineupPlayer(1, "m", Team.HOME, 11, "Mateusz"),
+        LineupPlayer(2, "m", Team.HOME, 7, "Marcin"),
+        LineupPlayer(3, "m", Team.HOME, 1, "Kuba"),
+        LineupPlayer(4, "m", Team.HOME, null, "Tomasz"),
+    )
+
+    @Test
+    fun playerSuggestions_emptyGivesWholeLineupInOrder() {
+        assertEquals(listOf("Kuba", "Marcin", "Mateusz", "Tomasz"), playerSuggestions(lineup, " ").map { it.name })
+    }
+
+    @Test
+    fun playerSuggestions_byNumberPrefix() {
+        assertEquals(listOf("Kuba", "Mateusz"), playerSuggestions(lineup, "1").map { it.name })
+        assertEquals(listOf("Marcin"), playerSuggestions(lineup, "7").map { it.name })
+    }
+
+    @Test
+    fun playerSuggestions_byNamePart_startFirst() {
+        // "Tomasz" has "ma" only inside, so it comes after the names starting with it
+        assertEquals(listOf("Marcin", "Mateusz", "Tomasz"), playerSuggestions(lineup, "MA").map { it.name })
+        assertEquals(listOf("Mateusz"), playerSuggestions(lineup, "teu").map { it.name })
+    }
+
+    @Test
+    fun playerSuggestions_noneOnceChosenOrUnknown() {
+        assertEquals(emptyList<LineupPlayer>(), playerSuggestions(lineup, "marcin"))
+        assertEquals(emptyList<LineupPlayer>(), playerSuggestions(lineup, "Zenek"))
+    }
 }

@@ -7,6 +7,17 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.BorderStroke
+import pl.net.orlik.ui.theme.InkMuted
+import pl.net.orlik.ui.theme.GreenDark
+import pl.net.orlik.review.playerSuggestions
+import pl.net.orlik.data.LineupPlayer
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -201,14 +212,8 @@ fun EventEditScreen(
                         }
                     }
                 }
-                if (draft.type?.hasAssist == true) {
-                    // Two short names side by side, as in the mockup
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NameField(stringResource(R.string.scorer_label), draft.player, onPlayer, Modifier.weight(1f))
-                        NameField(stringResource(R.string.assist_label), draft.assist, onAssist, Modifier.weight(1f))
-                    }
-                } else if (draft.type?.hasPlayer == true) {
-                    NameField(stringResource(R.string.player_label), draft.player, onPlayer, Modifier.fillMaxWidth())
+                if (draft.type?.hasPlayer == true) {
+                    PlayerFields(draft, draft.team?.let { state.lineup[it] }.orEmpty(), onPlayer, onAssist)
                 }
                 if (draft.type == EventType.GOAL_DISALLOWED) {
                     GoalLink(draft, state.goalCandidates, state.match, onLinkedGoal)
@@ -305,9 +310,126 @@ private fun goalLabel(goal: ReviewRow, match: Match?): String {
     return parts.joinToString(" · ")
 }
 
-/** A name typed by hand until team rosters (phase 5) offer a list to choose from. */
+private enum class PlayerField { PLAYER, ASSIST }
+
+/**
+ * Scorer and assist (goals) or the player (cards). Typing offers the chosen team's lineup below the
+ * fields (design doc, section 11); without a lineup, or with "spoza składu", the name stays as typed.
+ */
 @Composable
-private fun NameField(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier) {
+private fun PlayerFields(draft: EventDraft, lineup: List<LineupPlayer>, onPlayer: (String) -> Unit, onAssist: (String) -> Unit) {
+    var focused by remember { mutableStateOf<PlayerField?>(null) }
+    // "Wpisz … spoza składu" hides the list until the field is typed in or focused again
+    var dismissed by remember { mutableStateOf(false) }
+    fun focusOf(field: PlayerField): (Boolean) -> Unit = { hasFocus ->
+        if (hasFocus) focused = field else if (focused == field) focused = null
+        dismissed = false
+    }
+    val player: (String) -> Unit = { dismissed = false; onPlayer(it) }
+    val assist: (String) -> Unit = { dismissed = false; onAssist(it) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (draft.type?.hasAssist == true) {
+            // Two short names side by side, as in the mockup
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                NameField(stringResource(R.string.scorer_label), draft.player, player, focusOf(PlayerField.PLAYER), Modifier.weight(1f))
+                NameField(stringResource(R.string.assist_label), draft.assist, assist, focusOf(PlayerField.ASSIST), Modifier.weight(1f))
+            }
+        } else {
+            NameField(stringResource(R.string.player_label), draft.player, player, focusOf(PlayerField.PLAYER), Modifier.fillMaxWidth())
+        }
+        val typed = when (focused) {
+            PlayerField.PLAYER -> draft.player
+            PlayerField.ASSIST -> draft.assist
+            null -> null
+        }
+        if (typed != null && !dismissed && lineup.isNotEmpty()) {
+            val choose = if (focused == PlayerField.ASSIST) onAssist else onPlayer
+            PlayerSuggestions(
+                suggestions = playerSuggestions(lineup, typed),
+                typed = typed,
+                chosen = lineup.any { it.name.equals(typed.trim(), ignoreCase = true) },
+                onChoose = choose,
+                onKeepTyped = { dismissed = true },
+            )
+        }
+    }
+}
+
+/** "7 Marcin" rows with the typed part in bold, then "Wpisz „…” spoza składu". */
+@Composable
+private fun PlayerSuggestions(
+    suggestions: List<LineupPlayer>,
+    typed: String,
+    chosen: Boolean,
+    onChoose: (String) -> Unit,
+    onKeepTyped: () -> Unit,
+) {
+    val text = typed.trim()
+    val keepTyped = text.isNotEmpty() && !chosen
+    if (suggestions.isEmpty() && !keepTyped) return
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column {
+            suggestions.take(MAX_SUGGESTIONS).forEach { player ->
+                SuggestionRow(onClick = { onChoose(player.name) }) {
+                    Text(
+                        player.number?.toString() ?: "—",
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (player.number != null) GreenDark else InkMuted,
+                        modifier = Modifier.width(32.dp),
+                    )
+                    Text(highlighted(player.name, if (text.all { it.isDigit() }) "" else text))
+                }
+            }
+            if (keepTyped) {
+                SuggestionRow(onClick = onKeepTyped) {
+                    Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = InkMuted, modifier = Modifier.width(32.dp).size(20.dp))
+                    Text(stringResource(R.string.outside_lineup, text), color = InkMuted)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionRow(onClick: () -> Unit, content: @Composable () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .heightIn(min = 44.dp)
+            .padding(horizontal = 12.dp),
+    ) { content() }
+}
+
+/** The name with the first occurrence of [part] in bold, ignoring case. */
+private fun highlighted(name: String, part: String): AnnotatedString = buildAnnotatedString {
+    val start = if (part.isEmpty()) -1 else name.indexOf(part, ignoreCase = true)
+    if (start < 0) {
+        append(name)
+    } else {
+        append(name.substring(0, start))
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(name.substring(start, start + part.length)) }
+        append(name.substring(start + part.length))
+    }
+}
+
+private const val MAX_SUGGESTIONS = 6
+
+/** A name typed by hand, or chosen from the lineup below it. */
+@Composable
+private fun NameField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onFocus: (Boolean) -> Unit,
+    modifier: Modifier,
+) {
     Column(modifier) {
         Field(label) {
             OutlinedTextField(
@@ -315,7 +437,7 @@ private fun NameField(label: String, value: String, onValueChange: (String) -> U
                 onValueChange = onValueChange,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().onFocusChanged { onFocus(it.isFocused) },
             )
         }
     }

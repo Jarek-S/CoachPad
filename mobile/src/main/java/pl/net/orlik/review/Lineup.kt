@@ -24,3 +24,18 @@ fun playerEntryText(number: Int?, name: String): String = if (number == null) na
 /** By shirt number, players without one last; then by name. */
 val lineupOrder: Comparator<LineupPlayer> =
     compareBy<LineupPlayer, Int?>(nullsLast()) { it.number }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+
+/**
+ * Lineup players offered for what is typed in a player field: by shirt number when it is digits
+ * ("1" → 1, 10, 11), otherwise by a part of the name, ignoring case; names starting with it first.
+ * Empty → the whole lineup. Nothing once the field holds a lineup name exactly (already chosen).
+ */
+fun playerSuggestions(lineup: List<LineupPlayer>, typed: String): List<LineupPlayer> {
+    val text = typed.trim()
+    if (lineup.any { it.name.equals(text, ignoreCase = true) }) return emptyList()
+    val sorted = lineup.sortedWith(lineupOrder)
+    if (text.isEmpty()) return sorted
+    if (text.all { it.isDigit() }) return sorted.filter { it.number?.toString()?.startsWith(text) == true }
+    return sorted.filter { it.name.contains(text, ignoreCase = true) }
+        .sortedBy { !it.name.startsWith(text, ignoreCase = true) }
+}

@@ -22,6 +22,8 @@ import pl.net.orlik.audio.AudioDurations
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.DeletedRecording
 import pl.net.orlik.data.EventEdits
+import pl.net.orlik.data.LineupDao
+import pl.net.orlik.data.LineupPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.PhoneDatabase
@@ -51,6 +53,8 @@ data class EventEditUiState(
     val playing: Boolean = false,
     /** For a disallowed goal: earlier goals of its team, to choose from on "Zmień". */
     val goalCandidates: List<ReviewRow> = emptyList(),
+    /** The match lineup, offered in the player fields of the chosen team. */
+    val lineup: Map<Team, List<LineupPlayer>> = emptyMap(),
 )
 
 /** What the screen does once an action is saved. */
@@ -67,6 +71,7 @@ class EventEditViewModel(
     private val matchId: String,
     startEventId: String,
     private val dao: MatchEventDao,
+    private val lineup: LineupDao,
     private val edits: EventEdits,
     private val recordingsDir: File,
 ) : ViewModel() {
@@ -90,7 +95,8 @@ class EventEditViewModel(
         events,
         dao.match(matchId),
         player.playingId,
-    ) { (id, draft, duration), stored, match, playingId ->
+        lineup.lineupOf(matchId),
+    ) { (id, draft, duration), stored, match, playingId, players ->
         val list = stored.orEmpty()
         val review = matchReviewOf(list)
         val rows = (review.toReview + review.confirmed).associateBy { it.eventId }
@@ -109,6 +115,7 @@ class EventEditViewModel(
             } else {
                 emptyList()
             },
+            lineup = players.groupBy { it.team },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EventEditUiState())
 
@@ -210,8 +217,9 @@ class EventEditViewModel(
     companion object {
         fun factory(app: Application, matchId: String, eventId: String): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val dao = PhoneDatabase.get(app).matchEventDao()
-                EventEditViewModel(matchId, eventId, dao, EventEdits(dao, recordingsDir(app)), recordingsDir(app))
+                val db = PhoneDatabase.get(app)
+                val dao = db.matchEventDao()
+                EventEditViewModel(matchId, eventId, dao, db.lineupDao(), EventEdits(dao, recordingsDir(app)), recordingsDir(app))
             }
         }
     }

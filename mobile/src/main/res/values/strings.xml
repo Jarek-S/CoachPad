@@ -108,7 +108,7 @@
     <string name="export_unreviewed_text">Only confirmed events are exported. Export anyway?</string>
 
     <!-- Match lineup (phase 5) -->
-    <string name="lineup_title">Match lineup</string>
+    <string name="lineup_title">Team lineups</string>
     <!-- Team tab: name and number of players, e.g. "Eagles · 9" -->
     <string name="lineup_tab">%1$s · %2$d</string>
     <string name="team_name_home">Team name (home)</string>
@@ -118,6 +118,7 @@
     <string name="lineup_empty">No players — type the scorer by hand in the event.</string>
     <string name="lineup_tap_hint">Tap a player to correct the number or name.</string>
     <string name="remove_player">Remove %s</string>
+    <string name="outside_lineup">Use “%s” (not in the lineup)</string>
 
     <plurals name="recordings">
         <item quantity="one">%d recording</item>

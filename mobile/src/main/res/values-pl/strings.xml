@@ -106,7 +106,7 @@
     <string name="export_unreviewed_text">Eksportowane są tylko potwierdzone zdarzenia. Eksportować mimo to?</string>
 
     <!-- Match lineup (phase 5) -->
-    <string name="lineup_title">Skład meczu</string>
+    <string name="lineup_title">Składy drużyn</string>
     <!-- Team tab: name and number of players, e.g. "Orły · 9" -->
     <string name="lineup_tab">%1$s · %2$d</string>
     <string name="team_name_home">Nazwa drużyny (gospodarze)</string>
@@ -116,6 +116,7 @@
     <string name="lineup_empty">Bez zawodników — strzelca wpiszesz ręcznie przy zdarzeniu.</string>
     <string name="lineup_tap_hint">Tapnięcie w zawodnika — poprawa numeru lub imienia.</string>
     <string name="remove_player">Usuń: %s</string>
+    <string name="outside_lineup">Wpisz „%s” spoza składu</string>
 
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>
