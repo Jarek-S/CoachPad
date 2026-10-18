@@ -234,7 +234,10 @@ private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDis
         text = {
             Text(stringResource(R.string.delete_phone_match_text, matchTitle(match.homeTeam, match.awayTeam), formatMatchStart(match.startedAt)))
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.delete)) } },
+        confirmButton = {
+            // Red like "Usuń" for a match still on the watch: it cannot be undone
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

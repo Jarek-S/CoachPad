@@ -9,18 +9,21 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pl.net.orlik.audio.AudioDurations
 import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
-import pl.net.orlik.data.TranscriptDao
 import pl.net.orlik.data.PhoneDatabase
+import pl.net.orlik.data.TranscriptDao
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.export.MatchExport
 import pl.net.orlik.export.matchExportOf
@@ -63,13 +66,22 @@ class MatchReviewViewModel(
 
     private val events = dao.eventsOf(matchId)
 
+    // The events show at once; lengths follow when read from the files
     private val durations = events.map { list ->
         list.mapNotNull { event ->
             val file = event.audioFileRef ?: return@mapNotNull null
-            // Measured here too, so playback starts without the wait
-            AudioLevels.gainMillibels(File(recordingsDir, file))
             AudioDurations.of(File(recordingsDir, file))?.let { event.id to it }
         }.toMap()
+    }.onStart { emit(emptyMap()) }
+
+    init {
+        // Loudness measured ahead, so playback starts without the wait; decoding every recording
+        // takes seconds, so it stays out of what the screen waits for
+        viewModelScope.launch {
+            events.collectLatest { list ->
+                list.forEach { event -> event.audioFileRef?.let { AudioLevels.gainMillibels(File(recordingsDir, it)) } }
+            }
+        }
     }
 
     private val stt = combine(
