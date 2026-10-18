@@ -43,6 +43,9 @@
     <string name="cancel">Anuluj</string>
     <string name="delete_match_title">Usunąć mecz z zegarka?</string>
     <string name="delete_match_text">%1$s, %2$s. Zdarzenia i nagrania tego meczu, które są jeszcze na zegarku, zostaną usunięte. Tej operacji nie można cofnąć.</string>
+    <string name="delete_phone_match_title">Usunąć mecz?</string>
+    <string name="delete_phone_match_text">%1$s, %2$s. Wszystkie zdarzenia, nagrania i składy tego meczu zostaną usunięte z telefonu. Tej operacji nie można cofnąć.</string>
+    <string name="delete_match_hint">Przytrzymaj mecz, aby go usunąć</string>
     <string name="sync_no_response">Zegarek przestał odpowiadać. Dane zostały na zegarku — spróbuj ponownie.</string>
 
     <string name="edit_position">Do przejrzenia · %1$d z %2$d</string>

@@ -94,6 +94,37 @@ class TranscriptReadingTest {
     }
 
     @Test
+    fun cardWordAfterAssist_isAMisheardName() {
+        assertEquals(TranscriptReading(EventType.GOAL, Team.HOME, "Adam", null), read("Gol Adam, asysta, żółta kartka"))
+        assertEquals(EventType.GOAL, read("Gol, lan, asysta, żółta, asysta, marcin").type)
+    }
+
+    @Test
+    fun scorerIsNotAlsoTheAssist() {
+        assertEquals(TranscriptReading(EventType.GOAL, Team.HOME, "Adam", null), read("Gol Adam, asysta Adam"))
+    }
+
+    @Test
+    fun shortForm() {
+        val players = lineup + player(Team.AWAY, null, "Sebastian")
+        assertEquals(TranscriptReading(EventType.GOAL, Team.AWAY, "Sebastian", null), read("Gol Seba", players))
+    }
+
+    @Test
+    fun sameFirstNameInOneTeam_keepsTheTeam() {
+        val players = listOf(player(Team.AWAY, null, "Marcin Z"), player(Team.AWAY, null, "Marcin G"), player(Team.HOME, null, "Adam"))
+        assertEquals(TranscriptReading(EventType.GOAL, Team.AWAY, "Marcin", null), read("Gol marcin", players))
+        val bothTeams = players + player(Team.HOME, null, "Marcin K")
+        assertEquals(TranscriptReading(EventType.GOAL), read("Gol Marcin", bothTeams))
+    }
+
+    @Test
+    fun madeUpText_readsAsNothing() {
+        assertEquals(TranscriptReading(), read("Dziękuję za obejrzenie mojego filmu, zapraszam do subskrybowania"))
+        assertEquals(TranscriptReading(), read("Wszelkie prawa zastrzeżone!"))
+    }
+
+    @Test
     fun nothingKnown() {
         assertEquals(TranscriptReading(), read("eee yyy"))
         assertEquals(TranscriptReading(), read(""))

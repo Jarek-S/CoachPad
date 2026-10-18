@@ -45,6 +45,9 @@
     <string name="cancel">Cancel</string>
     <string name="delete_match_title">Delete the match from the watch?</string>
     <string name="delete_match_text">%1$s, %2$s. Events and recordings of this match still on the watch will be deleted. This cannot be undone.</string>
+    <string name="delete_phone_match_title">Delete the match?</string>
+    <string name="delete_phone_match_text">%1$s, %2$s. All its events, recordings and team lineups will be deleted from the phone. This cannot be undone.</string>
+    <string name="delete_match_hint">Hold a match to delete it</string>
     <string name="sync_no_response">The watch stopped responding. The data is still on the watch — try again.</string>
 
     <string name="edit_position">To review · %1$d of %2$d</string>

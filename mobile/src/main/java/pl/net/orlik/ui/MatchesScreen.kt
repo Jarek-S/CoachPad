@@ -2,6 +2,7 @@ package pl.net.orlik.ui
 
 import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -23,15 +25,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -39,14 +50,19 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pl.net.orlik.R
+import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.PhoneDatabase
+import pl.net.orlik.data.deleteMatch
+import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.theme.MatchNotesTheme
@@ -62,25 +78,43 @@ data class MatchesUiState(
     val pendingOnWatch: Int = 0,
 )
 
-class MatchesViewModel(matches: Flow<List<MatchListItem>>, summaries: Flow<QueueSummary?>) : ViewModel() {
+class MatchesViewModel(
+    private val dao: MatchEventDao,
+    private val recordingsDir: File,
+    summaries: Flow<QueueSummary?>,
+) : ViewModel() {
 
-    val state: StateFlow<MatchesUiState> = combine(matches, summaries) { list, summary ->
+    val state: StateFlow<MatchesUiState> = combine(dao.matches(), summaries) { list, summary ->
         MatchesUiState(list, summary?.matches?.size ?: 0)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchesUiState())
+
+    fun delete(matchId: String) {
+        viewModelScope.launch { deleteMatch(dao, recordingsDir, matchId) }
+    }
 
     companion object {
         fun factory(app: Application): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                MatchesViewModel(PhoneDatabase.get(app).matchEventDao().matches(), QueueSummarySource(app).summaries)
+                MatchesViewModel(PhoneDatabase.get(app).matchEventDao(), recordingsDir(app), QueueSummarySource(app).summaries)
             }
         }
     }
 }
 
-/** Start screen: the matches on the phone, and the way to sync more from the watch. */
+/** Start screen: the matches on the phone, and the way to sync more from the watch; holding a match deletes it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSync: () -> Unit, onOpenSettings: () -> Unit) {
+fun MatchesScreen(
+    state: MatchesUiState,
+    onOpenMatch: (String) -> Unit,
+    onOpenSync: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onDeleteMatch: (String) -> Unit,
+) {
+    var toDelete by rememberSaveable { mutableStateOf<String?>(null) }
+    state.matches?.firstOrNull { it.matchId == toDelete }?.let { match ->
+        DeleteMatchDialog(match, onConfirm = { onDeleteMatch(match.matchId); toDelete = null }, onDismiss = { toDelete = null })
+    }
     Scaffold(
         containerColor = Color.Transparent,
         contentColor = OnStadium,
@@ -124,17 +158,39 @@ fun MatchesScreen(state: MatchesUiState, onOpenMatch: (String) -> Unit, onOpenSy
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(matches.orEmpty(), key = { it.matchId }) { match ->
-                MatchCard(match, onClick = { onOpenMatch(match.matchId) })
+                MatchCard(match, onClick = { onOpenMatch(match.matchId) }, onLongClick = { toDelete = match.matchId })
+            }
+            if (matches.orEmpty().isNotEmpty()) {
+                item {
+                    Text(
+                        stringResource(R.string.delete_match_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnStadium.copy(alpha = 0.7f),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun MatchCard(match: MatchListItem, onClick: () -> Unit) {
+private fun MatchCard(match: MatchListItem, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    val shape = CardDefaults.shape
     Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                },
+            ),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -170,6 +226,19 @@ private fun MatchCard(match: MatchListItem, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.delete_phone_match_title)) },
+        text = {
+            Text(stringResource(R.string.delete_phone_match_text, matchTitle(match.homeTeam, match.awayTeam), formatMatchStart(match.startedAt)))
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.delete)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
 @Preview
 @Composable
 private fun MatchesScreenPreview() {
@@ -185,6 +254,7 @@ private fun MatchesScreenPreview() {
             onOpenMatch = {},
             onOpenSync = {},
             onOpenSettings = {},
+            onDeleteMatch = {},
         )
     }
 }

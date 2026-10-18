@@ -96,6 +96,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenMatch = { navController.navigate("$MATCH/$it") },
                                 onOpenSync = { navController.navigate(SYNC) },
                                 onOpenSettings = { navController.navigate(SETTINGS) },
+                                onDeleteMatch = viewModel::delete,
                             )
                         }
                         composable(SETTINGS) {

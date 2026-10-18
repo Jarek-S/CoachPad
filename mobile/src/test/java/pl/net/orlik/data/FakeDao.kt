@@ -52,6 +52,18 @@ class FakeDao : MatchEventDao {
 
     override suspend fun clearAudio(id: String) = change(id) { it.copy(audioFileRef = null) }
 
+    override suspend fun audioFilesOf(matchId: String) = events.filter { it.matchId == matchId }.mapNotNull { it.audioFileRef }
+
+    override suspend fun deleteEventsOf(matchId: String) {
+        events.removeAll { it.matchId == matchId }
+    }
+
+    override suspend fun deleteLineupOf(matchId: String) = Unit
+
+    override suspend fun deleteMatchRow(matchId: String) {
+        matches.removeAll { it.id == matchId }
+    }
+
     private fun change(id: String, update: (MatchEvent) -> MatchEvent) {
         val index = events.indexOfFirst { it.id == id }
         if (index >= 0) events[index] = update(events[index])

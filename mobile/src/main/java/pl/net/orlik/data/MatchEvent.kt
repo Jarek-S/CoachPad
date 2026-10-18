@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import pl.net.orlik.shared.EventType
 
@@ -175,6 +176,27 @@ interface MatchEventDao {
 
     @Query("UPDATE events SET audio_file_ref = NULL WHERE id = :id")
     suspend fun clearAudio(id: String)
+
+    /** Audio files of a match still on the phone, removed with it by [deleteMatch]. */
+    @Query("SELECT audio_file_ref FROM events WHERE match_id = :matchId AND audio_file_ref IS NOT NULL")
+    suspend fun audioFilesOf(matchId: String): List<String>
+
+    @Query("DELETE FROM events WHERE match_id = :matchId")
+    suspend fun deleteEventsOf(matchId: String)
+
+    @Query("DELETE FROM lineup_players WHERE match_id = :matchId")
+    suspend fun deleteLineupOf(matchId: String)
+
+    @Query("DELETE FROM matches WHERE id = :matchId")
+    suspend fun deleteMatchRow(matchId: String)
+
+    /** Removes a match with its events and lineups from the phone, all or nothing. */
+    @Transaction
+    suspend fun deleteMatch(matchId: String) {
+        deleteEventsOf(matchId)
+        deleteLineupOf(matchId)
+        deleteMatchRow(matchId)
+    }
 
     /** Events on the phone, mistakes removed in review not counted. */
     @Query("SELECT COUNT(*) FROM events WHERE status != 'DELETED'")

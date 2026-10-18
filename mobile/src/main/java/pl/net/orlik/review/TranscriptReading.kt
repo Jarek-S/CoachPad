@@ -26,11 +26,17 @@ data class TranscriptReading(
  * - The team is the scorer's (else the assist's) team in the lineup, else a team name that was said.
  *   An assist from the other team is dropped.
  * - With no lineup at all, capitalised words are taken as names, as Whisper writes them.
+ * - Type words after "asysta" do not count: an assist is said only with a goal, and a name the
+ *   speech recognition misheard there ("asysta, żółta kartka") must not turn it into a card.
+ * - The same player is not both the scorer and the assist.
+ * - Text speech recognition makes up from silence or noise ("Dziękuję za obejrzenie") reads as nothing.
  */
 fun readTranscript(text: String, lineup: List<LineupPlayer>, homeTeam: String?, awayTeam: String?): TranscriptReading {
+    if (madeUp(text)) return TranscriptReading()
     val words = Regex("""[\p{L}\p{N}]+""").findAll(text).map { it.value }.toList()
     val folded = words.map(::fold)
-    val type = typeOf(folded.toSet())
+    val firstAssist = folded.indexOfFirst { it in assistWords }.takeIf { it >= 0 } ?: folded.size
+    val type = typeOf(folded.take(firstAssist).toSet())
 
     var role = Role.PLAYER
     var corrected = false
@@ -43,7 +49,7 @@ fun readTranscript(text: String, lineup: List<LineupPlayer>, homeTeam: String?, 
             word in scorerWords -> role = Role.PLAYER.also { corrected = false }
             word in correctionWords -> corrected = true
             else -> {
-                val found = if (lineup.isEmpty()) capitalisedName(words[index]) else lineupName(folded, index, lineup)
+                val found = if (lineup.isEmpty()) capitalisedName(words[index]) else lineupName(words, folded, index, lineup)
                 if (found != null) {
                     if (role !in chosen || corrected) chosen[role] = found
                     corrected = false
@@ -56,7 +62,9 @@ fun readTranscript(text: String, lineup: List<LineupPlayer>, homeTeam: String?, 
     }
 
     val player = chosen[Role.PLAYER]
-    val assist = chosen[Role.ASSIST]?.takeIf { player?.team == null || it.team == null || it.team == player.team }
+    val assist = chosen[Role.ASSIST]
+        ?.takeIf { player?.team == null || it.team == null || it.team == player.team }
+        ?.takeIf { it.name != player?.name }
     val readType = type ?: if (player != null || assist != null || folded.any { it in assistWords }) EventType.GOAL else null
     val team = player?.team ?: assist?.team ?: teamNamed(folded, homeTeam, awayTeam)
     return TranscriptReading(
@@ -94,9 +102,10 @@ private fun typeOf(words: Set<String>): EventType? = when {
 
 /**
  * The lineup player the word at [index] names, by the whole name ("Kuba S.") before the first word
- * alone ("Kuba"); null when none, or when the best match is a tie between players.
+ * alone ("Kuba"); null when none. A tie between players of one team ("Marcin" for "Marcin Z" and
+ * "Marcin G") gives the word as said with that team; a tie across teams gives nothing.
  */
-private fun lineupName(folded: List<String>, index: Int, lineup: List<LineupPlayer>): Named? {
+private fun lineupName(words: List<String>, folded: List<String>, index: Int, lineup: List<LineupPlayer>): Named? {
     val word = folded[index]
     if (word in commonWords) return null
     if (word.all { it.isDigit() }) {
@@ -118,7 +127,9 @@ private fun lineupName(folded: List<String>, index: Int, lineup: List<LineupPlay
     val best = scored.minOf { it.second }
     val top = scored.filter { it.second == best }.map { it.first }
     val pick = top.singleOrNull() ?: top.filter { nameWords(it.name).size == 1 }.singleOrNull()
-    return pick?.let { Named(it.name, it.team) }
+    if (pick != null) return Named(pick.name, pick.team)
+    val team = top.map { it.team }.distinct().singleOrNull() ?: return null
+    return Named(words[index].replaceFirstChar { it.uppercase() }, team)
 }
 
 /** How far [word] is from a name word: 0 the same, else the distance; null when too far to be it. */
@@ -126,6 +137,8 @@ private fun matches(word: String, name: String): Int? {
     if (word == name) return 0
     // Polish endings: "Łukasza", "Adamem", "Marcinowi"
     if (name.length >= 3 && word.startsWith(name) && word.length - name.length <= 3) return 1
+    // Short forms: "Seba" for "Sebastian"
+    if (word.length >= 4 && name.startsWith(word)) return 2
     val allowed = when {
         name.length <= 3 -> 0
         name.length <= 5 -> 1
@@ -134,6 +147,17 @@ private fun matches(word: String, name: String): Int? {
     if (allowed == 0) return null
     return levenshtein(word, name).takeIf { it <= allowed }?.let { it + 1 }
 }
+
+/** Phrases speech recognition makes up from silence or noise, learnt from video subtitles. */
+private fun madeUp(text: String): Boolean {
+    val folded = fold(text)
+    return madeUpPhrases.any { it in folded }
+}
+
+private val madeUpPhrases = listOf(
+    "dziekuje za obejrzenie", "dziekuje za uwage", "prawa zastrzezone", "subskryb", "napisy stworzone",
+    "napisy wykonane", "thanks for watching", "thank you for watching", "subscribe",
+)
 
 private fun capitalisedName(word: String): Named? =
     word.takeIf { it.length >= 2 && it.first().isUpperCase() && fold(it) !in allKeywords && fold(it) !in commonWords }
