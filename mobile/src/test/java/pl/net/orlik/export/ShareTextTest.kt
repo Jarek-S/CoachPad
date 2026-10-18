@@ -21,6 +21,9 @@ class ShareTextTest {
         disallowedGoal = "Gol nieuznany",
         playerWithAssist = "%1${'$'}s (asysta: %2${'$'}s)",
         assistOnly = "asysta: %s",
+        scorersTitle = "Strzelcy i asysty",
+        goals = { if (it == 1) "$it gol" else if (it % 10 in 2..4 && it % 100 !in 12..14) "$it gole" else "$it goli" },
+        assists = { if (it == 1) "$it asysta" else if (it % 10 in 2..4 && it % 100 !in 12..14) "$it asysty" else "$it asyst" },
     )
 
     private val english = ShareTextLabels(
@@ -32,6 +35,9 @@ class ShareTextTest {
         disallowedGoal = "Disallowed goal",
         playerWithAssist = "%1${'$'}s (assist: %2${'$'}s)",
         assistOnly = "assist: %s",
+        scorersTitle = "Scorers and assists",
+        goals = { if (it == 1) "$it goal" else "$it goals" },
+        assists = { if (it == 1) "$it assist" else "$it assists" },
     )
 
     private val kickOff = LocalDateTime.of(2026, 10, 11, 14, 0, 3).atZone(zone).toInstant().toEpochMilli()
@@ -83,6 +89,11 @@ class ShareTextTest {
             39' ⚽ Rywale FC – nie liczy się (gol nieuznany, 42')
             67' ⚽ Orły – samobój
             81' 🟥 Orły
+
+            Strzelcy i asysty
+            Orły
+            • Marcin – 1 gol
+            • Jurek – 1 asysta
             """.trimIndent(),
             shareTextOf(export, polish, zone),
         )
@@ -99,6 +110,11 @@ class ShareTextTest {
 
             13' ⚽ Home – Marcin (assist: Jurek)
             28' 🟨 Away – Kowal
+
+            Scorers and assists
+            Home
+            • Marcin – 1 goal
+            • Jurek – 1 assist
             """.trimIndent(),
             shareTextOf(unnamed, english, zone),
         )
@@ -125,6 +141,38 @@ class ShareTextTest {
         assertEquals(
             "39' ⚽ Rywale FC – Kowal – z wolnego – nie liczy się (gol nieuznany, 42')",
             shareTextOf(noted, polish, zone).lines().last(),
+        )
+    }
+
+    @Test
+    fun tallies_countOnlyCountedGoals_mostGoalsFirst() {
+        val match = export.copy(
+            events = listOf(
+                event("g1", EventType.GOAL, play(5), Team.HOME, player = "Jurek", assist = "Marcin"),
+                event("g2", EventType.GOAL, play(10), Team.HOME, player = "Marcin", assist = "Jurek"),
+                event("g3", EventType.GOAL, play(20), Team.HOME, player = "marcin ", assist = "Kuba"),
+                event("g4", EventType.GOAL, play(30), Team.HOME, player = "Kuba", cancelledBy = "d1"),
+                event("d1", EventType.GOAL_DISALLOWED, play(31), Team.HOME, cancelsGoalId = "g4"),
+                event("g5", EventType.GOAL, play(40), Team.AWAY, player = "Kowal"),
+                event("g6", EventType.GOAL, play(50), Team.HOME, assist = "Jurek"),
+            ),
+        )
+
+        assertEquals(
+            listOf(PlayerTally("Marcin", 2, 1), PlayerTally("Jurek", 1, 2), PlayerTally("Kuba", 0, 1)),
+            playerTalliesOf(match, Team.HOME),
+        )
+        assertEquals(
+            """
+            Strzelcy i asysty
+            Orły
+            • Marcin – 2 gole, 1 asysta
+            • Jurek – 1 gol, 2 asysty
+            • Kuba – 1 asysta
+            Rywale FC
+            • Kowal – 1 gol
+            """.trimIndent(),
+            shareTextOf(match, polish, zone).substringAfter("\n\n").substringAfter("\n\n"),
         )
     }
 

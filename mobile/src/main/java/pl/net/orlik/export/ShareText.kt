@@ -26,13 +26,45 @@ data class ShareTextLabels(
     val playerWithAssist: String,
     /** An assist without the scorer, e.g. "asysta: %s". */
     val assistOnly: String,
+    /** Heading of the per-player summary, e.g. "Strzelcy i asysty". */
+    val scorersTitle: String,
+    /** A count of goals with its plural, e.g. "2 gole". */
+    val goals: (Int) -> String,
+    /** A count of assists with its plural, e.g. "1 asysta". */
+    val assists: (Int) -> String,
 )
+
+/** A player's counted goals and assists in the match, under the name as first written. */
+data class PlayerTally(val name: String, val goals: Int, val assists: Int)
+
+/**
+ * Goals and assists per player of [team]: only goals that count (a disallowed one does not), most
+ * goals first, then most assists, then the order of the match. Names compare without case and
+ * surrounding spaces, so "marcin" and "Marcin " add up.
+ */
+fun playerTalliesOf(export: MatchExport, team: Team): List<PlayerTally> {
+    data class Tally(val name: String, val first: Int, var goals: Int = 0, var assists: Int = 0)
+    val tallies = linkedMapOf<String, Tally>()
+    fun tally(name: String?, index: Int): Tally? {
+        val shown = name?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return tallies.getOrPut(shown.lowercase()) { Tally(shown, index) }
+    }
+    export.events.forEachIndexed { index, event ->
+        if (!event.counted || event.team != team) return@forEachIndexed
+        tally(event.player, index)?.let { it.goals++ }
+        tally(event.assist, index)?.let { it.assists++ }
+    }
+    return tallies.values
+        .sortedWith(compareByDescending<Tally> { it.goals }.thenByDescending { it.assists }.thenBy { it.first })
+        .map { PlayerTally(it.name, it.goals, it.assists) }
+}
 
 /**
  * [export] as text: the teams and score, the date, then one line per goal and card, with the
  * scorer and assist (or the player of a card) and the note of extra remarks. Notes
  * ("Notatka") and structural events are left out — usually remarks not meant for everyone. A
- * disallowed goal shows on the goal it cancels.
+ * disallowed goal shows on the goal it cancels. At the end, goals and assists per player of each
+ * team ([playerTalliesOf]), when any goal names a player.
  */
 fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): String {
     val home = export.homeTeam ?: labels.homeTeam
@@ -70,6 +102,22 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
         append("$home – $away  ${export.score.home}:${export.score.away}")
         date?.let { append('\n').append(it) }
         if (lines.isNotEmpty()) append("\n\n").append(lines.joinToString("\n"))
+        val teams = listOf(Team.HOME to home, Team.AWAY to away)
+            .map { (team, name) -> name to playerTalliesOf(export, team) }
+            .filter { (_, tallies) -> tallies.isNotEmpty() }
+        if (teams.isNotEmpty()) {
+            append("\n\n").append(labels.scorersTitle)
+            teams.forEach { (name, tallies) ->
+                append('\n').append(name)
+                tallies.forEach { tally ->
+                    val counts = listOfNotNull(
+                        tally.goals.takeIf { it > 0 }?.let(labels.goals),
+                        tally.assists.takeIf { it > 0 }?.let(labels.assists),
+                    )
+                    append("\n• ").append(tally.name).append(" – ").append(counts.joinToString(", "))
+                }
+            }
+        }
     }
 }
 

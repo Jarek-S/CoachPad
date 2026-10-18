@@ -81,6 +81,7 @@
     <string name="share_date_format">EEEE, d MMMM yyyy, HH:mm</string>
     <!-- %s: minute of the disallowed goal, e.g. "42'" -->
     <string name="share_not_counted">nie liczy się (gol nieuznany, %s)</string>
+    <string name="share_scorers_title">Strzelcy i asysty</string>
 
     <!-- CSV export: column names, in this order and number -->
     <string-array name="csv_columns">
@@ -177,5 +178,17 @@
         <item quantity="few">%d nagrania nierozpoznane</item>
         <item quantity="many">%d nagrań nierozpoznanych</item>
         <item quantity="other">%d nagrania nierozpoznanego</item>
+    </plurals>
+    <plurals name="share_goals">
+        <item quantity="one">%d gol</item>
+        <item quantity="few">%d gole</item>
+        <item quantity="many">%d goli</item>
+        <item quantity="other">%d gola</item>
+    </plurals>
+    <plurals name="share_assists">
+        <item quantity="one">%d asysta</item>
+        <item quantity="few">%d asysty</item>
+        <item quantity="many">%d asyst</item>
+        <item quantity="other">%d asysty</item>
     </plurals>
 </resources>
