@@ -13,6 +13,8 @@ fun shareTextLabelsOf(resources: Resources) = ShareTextLabels(
     locale = resources.configuration.locales[0],
     notCounted = resources.getString(R.string.share_not_counted),
     disallowedGoal = resources.getString(R.string.type_goal_disallowed),
+    playerWithAssist = resources.getString(R.string.player_with_assist),
+    assistOnly = resources.getString(R.string.assist_only),
 )
 
 /** Labels of the CSV file, in the app's language. */

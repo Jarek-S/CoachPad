@@ -27,7 +27,7 @@ class MatchRepository(
 
     /**
      * Starts a new match: generates its id, records MATCH_START and takes a snapshot of the
-     * shift timer settings, which then stay fixed for the whole match.
+     * shift timer settings. Only [toggleShiftTimer] changes the timer of a match in progress.
      */
     suspend fun startMatch(): ActiveMatch {
         val match = ActiveMatch(
@@ -65,6 +65,22 @@ class MatchRepository(
         if (confirmed == timer) return match
         timerStore.save(match.matchId, confirmed)
         return match.copy(shiftTimer = confirmed)
+    }
+
+    /**
+     * Turns the shift timer of [match] on or off (holding the match clock), as many times as
+     * needed. Turned on, it counts a full interval from the current play time; turned off, all
+     * of it goes, alarm included. The choice is saved in the settings too, so the next match
+     * starts the same way. The interval stays as set before the match.
+     */
+    fun toggleShiftTimer(match: ActiveMatch): ActiveMatch {
+        val current = settings.shiftTimerSettings()
+        val enabled = match.shiftTimer == null
+        settings.saveShiftTimerSettings(current.copy(enabled = enabled))
+        val timer = current.copy(enabled = enabled).toShiftTimerOrNull()
+            ?.copy(lastResetPlayMillis = playTimeMillis(clock(), match.startedAt, match.pauses))
+        timerStore.save(match.matchId, timer)
+        return match.copy(shiftTimer = timer)
     }
 
     /** Prepares a voice recording starting now; nothing is saved until [saveVoiceRecording]. */

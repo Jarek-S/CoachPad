@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,12 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -26,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,11 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import pl.net.orlik.R
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.Team
+import pl.net.orlik.export.ExportFormat
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.ReviewHint
 import pl.net.orlik.review.ReviewRow
@@ -76,18 +76,20 @@ fun MatchReviewScreen(
     onBack: () -> Unit,
     onTogglePlayback: (eventId: String, audioFileRef: String) -> Unit,
     onOpenEvent: (eventId: String) -> Unit,
-    onTeamNames: (homeTeam: String, awayTeam: String) -> Unit,
+    onOpenLineup: () -> Unit,
+    onExport: (ExportFormat) -> Unit,
 ) {
     var confirmedExpanded by rememberSaveable { mutableStateOf(false) }
-    var editingNames by rememberSaveable { mutableStateOf(false) }
-    if (editingNames) {
-        TeamNamesDialog(
-            match = state.match,
-            onSave = { home, away ->
-                onTeamNames(home, away)
-                editingNames = false
+    // A format chosen while events still wait for review: asked about first (design doc, section 5)
+    var unreviewedExport by rememberSaveable { mutableStateOf<ExportFormat?>(null) }
+    unreviewedExport?.let { format ->
+        UnreviewedExportDialog(
+            count = state.review.toReview.size,
+            onConfirm = {
+                unreviewedExport = null
+                onExport(format)
             },
-            onDismiss = { editingNames = false },
+            onDismiss = { unreviewedExport = null },
         )
     }
     val home = state.match?.homeTeam
@@ -117,8 +119,13 @@ fun MatchReviewScreen(
                 },
                 actions = {
                     if (state.match != null) {
-                        IconButton(onClick = { editingNames = true }) {
-                            Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.team_names))
+                        ExportMenu(
+                            onExport = { format ->
+                                if (state.review.toReview.isEmpty()) onExport(format) else unreviewedExport = format
+                            },
+                        )
+                        IconButton(onClick = onOpenLineup) {
+                            Icon(painterResource(R.drawable.ic_edit), stringResource(R.string.lineup_title))
                         }
                     }
                 },
@@ -166,34 +173,39 @@ fun MatchReviewScreen(
     }
 }
 
-/** Two fields; an empty one keeps the default "Gospodarze" / "Goście". */
+/** "Udostępnij": the text as a message, or CSV / JSON as a file. */
 @Composable
-private fun TeamNamesDialog(match: Match?, onSave: (String, String) -> Unit, onDismiss: () -> Unit) {
-    var home by rememberSaveable { mutableStateOf(match?.homeTeam.orEmpty()) }
-    var away by rememberSaveable { mutableStateOf(match?.awayTeam.orEmpty()) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.team_names)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = home,
-                    onValueChange = { home = it },
-                    label = { Text(stringResource(R.string.team_home)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
-                )
-                OutlinedTextField(
-                    value = away,
-                    onValueChange = { away = it },
-                    label = { Text(stringResource(R.string.team_away)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onSave(home, away) }),
+private fun ExportMenu(onExport: (ExportFormat) -> Unit) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(painterResource(R.drawable.ic_share), stringResource(R.string.share))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            listOf(
+                ExportFormat.TEXT to R.string.export_text,
+                ExportFormat.CSV to R.string.export_csv,
+                ExportFormat.JSON to R.string.export_json,
+            ).forEach { (format, label) ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(label)) },
+                    onClick = {
+                        open = false
+                        onExport(format)
+                    },
                 )
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(home, away) }) { Text(stringResource(R.string.save)) } },
+        }
+    }
+}
+
+@Composable
+private fun UnreviewedExportDialog(count: Int, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(pluralStringResource(R.plurals.export_unreviewed_title, count, count)) },
+        text = { Text(stringResource(R.string.export_unreviewed_text)) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.export_anyway)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
@@ -304,6 +316,7 @@ private fun EventRow(
             }
             row.cancelsGoalAt?.let { MutedText(stringResource(R.string.cancels_goal_at, formatPlayTime(it))) }
             if (row.cancelled) MutedText(stringResource(R.string.not_counted))
+            playersText(row.player, row.assist)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
             // A description waiting for review takes the place of the note
             if (row.hint != ReviewHint.DESCRIBE) row.note?.let { MutedText("„$it”") }
         }
@@ -369,7 +382,8 @@ private fun MatchReviewScreenPreview() {
             onBack = {},
             onTogglePlayback = { _, _ -> },
             onOpenEvent = {},
-            onTeamNames = { _, _ -> },
+            onOpenLineup = {},
+            onExport = {},
         )
     }
 }

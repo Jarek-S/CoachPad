@@ -19,6 +19,8 @@ class ShareTextTest {
         locale = Locale.forLanguageTag("pl"),
         notCounted = "nie liczy się (gol nieuznany, %s)",
         disallowedGoal = "Gol nieuznany",
+        playerWithAssist = "%1${'$'}s (asysta: %2${'$'}s)",
+        assistOnly = "asysta: %s",
     )
 
     private val english = ShareTextLabels(
@@ -28,6 +30,8 @@ class ShareTextTest {
         locale = Locale.ENGLISH,
         notCounted = "does not count (disallowed, %s)",
         disallowedGoal = "Disallowed goal",
+        playerWithAssist = "%1${'$'}s (assist: %2${'$'}s)",
+        assistOnly = "assist: %s",
     )
 
     private val kickOff = LocalDateTime.of(2026, 10, 11, 14, 0, 3).atZone(zone).toInstant().toEpochMilli()
@@ -42,7 +46,9 @@ class ShareTextTest {
         note: String? = null,
         cancelledBy: String? = null,
         cancelsGoalId: String? = null,
-    ) = ExportEvent(id, type, team, kickOff + playTime, playTime, note, cancelledBy, cancelsGoalId)
+        player: String? = null,
+        assist: String? = null,
+    ) = ExportEvent(id, type, team, kickOff + playTime, playTime, note, cancelledBy, cancelsGoalId, player, assist)
 
     private val export = MatchExport(
         matchId = "m1",
@@ -53,12 +59,12 @@ class ShareTextTest {
         score = Score(home = 2, away = 0),
         events = listOf(
             event("start", EventType.MATCH_START, 0),
-            event("h1", EventType.GOAL, play(12, 34), Team.HOME, note = "Marcin, asysta Jurek"),
-            event("y1", EventType.YELLOW_CARD, play(27, 10), Team.AWAY),
+            event("h1", EventType.GOAL, play(12, 34), Team.HOME, player = "Marcin", assist = "Jurek"),
+            event("y1", EventType.YELLOW_CARD, play(27, 10), Team.AWAY, player = "Kowal"),
             event("n1", EventType.NOTE, play(30), note = "zmiana: Kuba za Marcina"),
             event("a1", EventType.GOAL, play(38, 5), Team.AWAY, cancelledBy = "no"),
             event("no", EventType.GOAL_DISALLOWED, play(41, 20), Team.AWAY, note = "Spalony", cancelsGoalId = "a1"),
-            event("h2", EventType.GOAL, play(66, 0), Team.HOME, note = "Kuba"),
+            event("h2", EventType.GOAL, play(66, 0), Team.HOME, note = "samobój"),
             event("r1", EventType.RED_CARD, play(80, 0), Team.HOME),
             event("end", EventType.MATCH_END, play(90)),
         ),
@@ -72,10 +78,10 @@ class ShareTextTest {
             Orły – Rywale FC  2:0
             niedziela, 11 października 2026, 14:00
 
-            13' ⚽ Orły – Marcin, asysta Jurek
-            28' 🟨 Rywale FC
+            13' ⚽ Orły – Marcin (asysta: Jurek)
+            28' 🟨 Rywale FC – Kowal
             39' ⚽ Rywale FC – nie liczy się (gol nieuznany, 42')
-            67' ⚽ Orły – Kuba
+            67' ⚽ Orły – samobój
             81' 🟥 Orły
             """.trimIndent(),
             shareTextOf(export, polish, zone),
@@ -91,8 +97,8 @@ class ShareTextTest {
             Home – Away  2:0
             Sunday, 11 October 2026, 14:00
 
-            13' ⚽ Home – Marcin, asysta Jurek
-            28' 🟨 Away
+            13' ⚽ Home – Marcin (assist: Jurek)
+            28' 🟨 Away – Kowal
             """.trimIndent(),
             shareTextOf(unnamed, english, zone),
         )
@@ -111,13 +117,13 @@ class ShareTextTest {
     fun cancelledGoalWithANote_keepsTheNote() {
         val noted = export.copy(
             events = listOf(
-                event("a1", EventType.GOAL, play(38, 5), Team.AWAY, note = "Kowal", cancelledBy = "no"),
+                event("a1", EventType.GOAL, play(38, 5), Team.AWAY, note = "z wolnego", cancelledBy = "no", player = "Kowal"),
                 event("no", EventType.GOAL_DISALLOWED, play(41, 20), Team.AWAY, cancelsGoalId = "a1"),
             ),
         )
 
         assertEquals(
-            "39' ⚽ Rywale FC – Kowal – nie liczy się (gol nieuznany, 42')",
+            "39' ⚽ Rywale FC – Kowal – z wolnego – nie liczy się (gol nieuznany, 42')",
             shareTextOf(noted, polish, zone).lines().last(),
         )
     }

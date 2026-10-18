@@ -22,11 +22,11 @@ data class CsvLabels(
     val no: String,
 )
 
-/** match, date, minute, play time, time, type, team, player, assist, note, counts, recording. */
-const val CSV_COLUMN_COUNT = 12
+/** match, date, minute, play time, time, type, team, player, assist, note, counts. */
+const val CSV_COLUMN_COUNT = 11
 
 /** Byte order mark: without it Excel reads UTF-8 as the local code page and breaks Polish letters. */
-private const val BOM = "﻿"
+private const val BOM = "\uFEFF"
 
 private val DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
@@ -34,7 +34,7 @@ private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 /**
  * [export] as CSV: one row per event, notes and structural events included. Starts with a byte
  * order mark, so it must be written as UTF-8; separated by semicolons (the default of Polish
- * Excel), lines end with CRLF. Player columns stay empty until team rosters (phase 5).
+ * Excel), lines end with CRLF. Players are names as typed until team rosters (phase 5).
  */
 fun matchCsvOf(export: MatchExport, labels: CsvLabels, zone: ZoneId): String {
     require(labels.columns.size == CSV_COLUMN_COUNT) { "Expected $CSV_COLUMN_COUNT column names" }
@@ -56,11 +56,10 @@ fun matchCsvOf(export: MatchExport, labels: CsvLabels, zone: ZoneId): String {
                 Team.AWAY -> away
                 null -> ""
             },
-            "",
-            "",
+            event.player.orEmpty(),
+            event.assist.orEmpty(),
             event.note.orEmpty(),
             if (event.type == EventType.GOAL) (if (event.counted) labels.yes else labels.no) else "",
-            event.audioFile.orEmpty(),
         )
     }
     return BOM + (listOf(labels.columns) + rows).joinToString("") { row -> row.joinToString(";") { csvField(it) } + "\r\n" }

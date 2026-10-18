@@ -20,9 +20,23 @@ data class EventDraft(
     val note: String = "",
     /** For a disallowed goal: the goal it cancels; null when none is linked. */
     val linkedGoalId: String? = null,
+    /** The scorer of a goal, the player of a card. */
+    val player: String = "",
+    /** The assist of a goal. */
+    val assist: String = "",
 ) {
-    /** A type that has no team (a note) drops the team, so a stale one is not saved. */
+    /**
+     * A type that has no team (a note) drops the team, so a stale one is not saved. The player and
+     * the assist stay while editing, so switching the type back and forth loses nothing; only what
+     * the type has is saved.
+     */
     fun withType(type: EventType): EventDraft = copy(type = type, team = team.takeIf { type.needsTeam })
+
+    val storedPlayer: String?
+        get() = player.trim().takeIf { it.isNotEmpty() && type?.hasPlayer == true }
+
+    val storedAssist: String?
+        get() = assist.trim().takeIf { it.isNotEmpty() && type?.hasAssist == true }
 
     /** The link as stored: only a disallowed goal has one. */
     val storedLink: String?
@@ -43,6 +57,8 @@ fun draftOf(event: MatchEvent): EventDraft =
         team = event.team,
         note = event.rawTranscript.orEmpty(),
         linkedGoalId = event.linkedGoalEventId,
+        player = event.playerName.orEmpty(),
+        assist = event.assistName.orEmpty(),
     )
 
 /**

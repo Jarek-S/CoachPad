@@ -10,9 +10,9 @@ import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import pl.net.orlik.audio.AudioDurations
 import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
@@ -20,9 +20,10 @@ import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.export.MatchExport
+import pl.net.orlik.export.matchExportOf
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.matchReviewOf
-import pl.net.orlik.review.teamNameOf
 
 data class MatchReviewUiState(
     val match: Match? = null,
@@ -76,10 +77,8 @@ class MatchReviewViewModel(
 
     fun stopPlayback() = player.stop()
 
-    /** Names as typed; an empty one goes back to "Gospodarze" / "Goście". */
-    fun setTeamNames(homeTeam: String, awayTeam: String) {
-        viewModelScope.launch { dao.setTeamNames(matchId, teamNameOf(homeTeam), teamNameOf(awayTeam)) }
-    }
+    /** The match as it is now, for "Udostępnij". */
+    suspend fun export(): MatchExport = matchExportOf(dao.match(matchId).first() ?: Match(matchId), events.first())
 
     override fun onCleared() {
         player.stop()

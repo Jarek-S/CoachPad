@@ -45,7 +45,7 @@ class MatchExportTest {
         linkedGoalEventId = linkedGoal,
     )
 
-    private fun export(vararg events: MatchEvent) = matchExportOf(match, events.toList(), zone)
+    private fun export(vararg events: MatchEvent) = matchExportOf(match, events.toList())
 
     @Test
     fun onlyConfirmedEventsGoOut_unreviewedAreCounted() {
@@ -137,24 +137,21 @@ class MatchExportTest {
     }
 
     @Test
-    fun recordings_namedByLocalTime_sameSecondNumbered() {
+    fun players_trimmed_onlyForTypesThatHaveThem() {
         val export = export(
-            event("start", min(0), EventType.MATCH_START),
-            event("g1", min(12) + 37_000, EventType.GOAL, Team.HOME),
-            event("g2", min(12) + 37_400, EventType.NOTE),
-            event("g3", min(12) + 37_900, EventType.NOTE),
+            event("g1", min(12), EventType.GOAL, Team.HOME).copy(playerName = " Marcin ", assistName = "Jurek"),
+            event("y1", min(20), EventType.YELLOW_CARD, Team.AWAY).copy(playerName = "Kowal", assistName = "stale"),
+            event("n1", min(25), EventType.NOTE).copy(playerName = "stale"),
+            event("g2", min(30), EventType.GOAL, Team.AWAY).copy(playerName = "  "),
         )
 
-        assertEquals(
-            listOf(null, "2026-10-11_14-12-40.m4a", "2026-10-11_14-12-40_2.m4a", "2026-10-11_14-12-40_3.m4a"),
-            export.events.map { it.audioFile },
-        )
-        assertEquals("g1.m4a", export.events[1].audioFileRef)
+        assertEquals(listOf("Marcin", "Kowal", null, null), export.events.map { it.player })
+        assertEquals(listOf("Jurek", null, null, null), export.events.map { it.assist })
     }
 
     @Test
     fun teamNames_comeFromTheMatch_nullWhenNotNamed() {
-        val export = matchExportOf(Match(id = "m1"), emptyList(), zone)
+        val export = matchExportOf(Match(id = "m1"), emptyList())
 
         assertEquals("m1", export.matchId)
         assertNull(export.homeTeam)

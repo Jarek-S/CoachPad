@@ -68,6 +68,14 @@ data class MatchEvent(
     /** For GOAL_DISALLOWED: the goal it cancels (design doc, section 8). */
     @ColumnInfo(name = "linked_goal_event_id")
     val linkedGoalEventId: String? = null,
+
+    /** The scorer of a goal, the player of a card; typed by hand until team rosters (phase 5). */
+    @ColumnInfo(name = "player_name")
+    val playerName: String? = null,
+
+    /** The assist of a goal. */
+    @ColumnInfo(name = "assist_name")
+    val assistName: String? = null,
 )
 
 /** Structural events need no review; everything else waits under "Do przejrzenia". */
@@ -119,10 +127,6 @@ interface MatchEventDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     fun match(matchId: String): Flow<Match?>
 
-    /** Null clears a name, so "Gospodarze" / "Goście" shows again. */
-    @Query("UPDATE matches SET home_team = :homeTeam, away_team = :awayTeam WHERE id = :matchId")
-    suspend fun setTeamNames(matchId: String, homeTeam: String?, awayTeam: String?)
-
     /** Matches on the phone, newest first. */
     @Query(
         """
@@ -144,7 +148,7 @@ interface MatchEventDao {
     @Query(
         """
         UPDATE events SET type = :type, team = :team, raw_transcript = :note, linked_goal_event_id = :linkedGoalId,
-            status = :status
+            player_name = :player, assist_name = :assist, status = :status
         WHERE id = :id
         """,
     )
@@ -154,6 +158,8 @@ interface MatchEventDao {
         team: Team?,
         note: String?,
         linkedGoalId: String?,
+        player: String?,
+        assist: String?,
         status: ReviewStatus,
     )
 

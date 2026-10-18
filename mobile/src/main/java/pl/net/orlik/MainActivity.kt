@@ -33,10 +33,13 @@ import pl.net.orlik.data.DeletedRecording
 import pl.net.orlik.data.EventEdits
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.export.shareExport
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.EditEffect
 import pl.net.orlik.ui.EventEditScreen
 import pl.net.orlik.ui.EventEditViewModel
+import pl.net.orlik.ui.LineupScreen
+import pl.net.orlik.ui.LineupViewModel
 import pl.net.orlik.ui.MatchReviewScreen
 import pl.net.orlik.ui.MatchReviewViewModel
 import pl.net.orlik.ui.MatchesScreen
@@ -115,7 +118,26 @@ class MainActivity : ComponentActivity() {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$EVENT/$it")
                                 },
-                                onTeamNames = viewModel::setTeamNames,
+                                onOpenLineup = {
+                                    viewModel.stopPlayback()
+                                    navController.navigate("$MATCH/$matchId/$LINEUP")
+                                },
+                                onExport = { format ->
+                                    scope.launch { shareExport(this@MainActivity, viewModel.export(), format) }
+                                },
+                            )
+                        }
+                        composable("$MATCH/{$MATCH_ID}/$LINEUP") { entry ->
+                            val matchId = checkNotNull(entry.arguments?.getString(MATCH_ID))
+                            val viewModel: LineupViewModel = viewModel(factory = LineupViewModel.factory(application, matchId))
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            LineupScreen(
+                                state = state,
+                                onBack = { navController.popBackStack() },
+                                onTeamName = viewModel::setTeamName,
+                                onAddPlayer = viewModel::addPlayer,
+                                onUpdatePlayer = viewModel::updatePlayer,
+                                onRemovePlayer = viewModel::removePlayer,
                             )
                         }
                         composable("$MATCH/{$MATCH_ID}/$EVENT/{$EVENT_ID}") { entry ->
@@ -144,6 +166,8 @@ class MainActivity : ComponentActivity() {
                                 onType = viewModel::setType,
                                 onTeam = viewModel::setTeam,
                                 onNote = viewModel::setNote,
+                                onPlayer = viewModel::setPlayer,
+                                onAssist = viewModel::setAssist,
                                 onLinkedGoal = viewModel::setLinkedGoal,
                                 onSkip = viewModel::skip,
                                 onConfirm = viewModel::confirm,
@@ -165,6 +189,7 @@ class MainActivity : ComponentActivity() {
         const val SYNC = "sync"
         const val MATCH = "match"
         const val MATCH_ID = "matchId"
+        const val LINEUP = "lineup"
         const val EVENT = "event"
         const val EVENT_ID = "eventId"
 

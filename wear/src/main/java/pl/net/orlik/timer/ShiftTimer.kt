@@ -17,7 +17,7 @@ sealed interface ShiftTimerState {
  * during a pause together with the match clock, and an alarm state survives the pause.
  *
  * [lastResetPlayMillis] is the play time of the last confirmed substitution (0 at match start).
- * The interval is fixed for the whole match (settings are read once, at match start).
+ * The interval is fixed for the whole match; the timer itself can be turned off and on again.
  */
 data class ShiftTimer(
     val intervalMillis: Long,

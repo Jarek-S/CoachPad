@@ -27,11 +27,6 @@ class FakeDao : MatchEventDao {
 
     override fun matches(): Flow<List<MatchListItem>> = flowOf(emptyList())
 
-    override suspend fun setTeamNames(matchId: String, homeTeam: String?, awayTeam: String?) {
-        val index = matches.indexOfFirst { it.id == matchId }
-        if (index >= 0) matches[index] = matches[index].copy(homeTeam = homeTeam, awayTeam = awayTeam)
-    }
-
     override suspend fun event(id: String) = events.firstOrNull { it.id == id }
 
     override suspend fun updateReview(
@@ -40,9 +35,14 @@ class FakeDao : MatchEventDao {
         team: Team?,
         note: String?,
         linkedGoalId: String?,
+        player: String?,
+        assist: String?,
         status: ReviewStatus,
     ) = change(id) {
-        it.copy(type = type, team = team, rawTranscript = note, linkedGoalEventId = linkedGoalId, status = status)
+        it.copy(
+            type = type, team = team, rawTranscript = note, linkedGoalEventId = linkedGoalId,
+            playerName = player, assistName = assist, status = status,
+        )
     }
 
     override suspend fun setStatus(id: String, status: ReviewStatus) = change(id) { it.copy(status = status) }

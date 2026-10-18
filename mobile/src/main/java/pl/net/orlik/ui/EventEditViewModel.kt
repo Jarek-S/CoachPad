@@ -135,6 +135,10 @@ class EventEditViewModel(
 
     fun setNote(note: String) = draft.update { it.copy(note = note) }
 
+    fun setPlayer(player: String) = draft.update { it.copy(player = player) }
+
+    fun setAssist(assist: String) = draft.update { it.copy(assist = assist) }
+
     fun togglePlayback() {
         val audio = state.value.row?.audioFileRef ?: return
         player.toggle(eventId.value, File(recordingsDir, audio))

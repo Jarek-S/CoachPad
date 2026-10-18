@@ -180,6 +180,65 @@ class MatchRepositoryTest {
     }
 
     @Test
+    fun toggleShiftTimer_on_countsFullIntervalFromNow_andSavesSettings() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = false, intervalMinutes = 7)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 10 * 60_000L
+        val toggled = repository.toggleShiftTimer(started)
+
+        assertEquals(ShiftTimer(intervalMillis = 7 * 60_000L, lastResetPlayMillis = 10 * 60_000L), toggled.shiftTimer)
+        assertEquals(ShiftTimerSettings(enabled = true, intervalMinutes = 7), settings.current)
+        assertEquals(toggled, MatchRepository(dao, settings, timerStore, publisher).findActiveMatch())
+    }
+
+    @Test
+    fun toggleShiftTimer_off_removesTimerEvenDuringAlarm_andSavesSettings() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 6 * 60_000L
+        val toggled = repository.toggleShiftTimer(started)
+
+        assertNull(toggled.shiftTimer)
+        assertFalse(settings.current.enabled)
+        assertEquals(toggled, MatchRepository(dao, settings, timerStore, publisher).findActiveMatch())
+    }
+
+    @Test
+    fun toggleShiftTimer_againAndAgain_eachOnStartsAfresh() = runBlocking {
+        settings.current = ShiftTimerSettings(enabled = true, intervalMinutes = 5)
+        var now = 0L
+        val repository = repository { now }
+        var match = repository.startMatch()
+
+        now = 3 * 60_000L
+        match = repository.toggleShiftTimer(match)
+        now = 4 * 60_000L
+        match = repository.toggleShiftTimer(match)
+
+        assertEquals(4 * 60_000L, match.shiftTimer?.lastResetPlayMillis)
+        assertTrue(settings.current.enabled)
+    }
+
+    @Test
+    fun toggleShiftTimer_duringPause_countsFromPausedPlayTime() = runBlocking {
+        var now = 0L
+        val repository = repository { now }
+        val started = repository.startMatch()
+
+        now = 6 * 60_000L
+        val paused = repository.pauseMatch(started)
+        now = 9 * 60_000L
+
+        assertEquals(6 * 60_000L, repository.toggleShiftTimer(paused).shiftTimer?.lastResetPlayMillis)
+    }
+
+    @Test
     fun endMatch_clearsTimerSnapshot() = runBlocking {
         settings.current = ShiftTimerSettings(enabled = true)
         val match = repository.startMatch()

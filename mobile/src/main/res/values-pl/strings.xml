@@ -8,7 +8,6 @@
     <string name="match">Mecz</string>
     <string name="team_home">Gospodarze</string>
     <string name="team_away">Goście</string>
-    <string name="team_names">Nazwy drużyn</string>
     <string name="reviewed">Przejrzany</string>
     <string name="to_review">Do przejrzenia</string>
     <string name="confirmed">Potwierdzone</string>
@@ -50,7 +49,14 @@
     <string name="play_minute_recorded">minuta gry · nagrano o %s</string>
     <string name="type_label">Typ</string>
     <string name="team_label">Drużyna</string>
-    <string name="note_placeholder">Np. kto strzelił, kto asystował</string>
+    <string name="note_placeholder">Np. zmiana, uwaga taktyczna</string>
+    <string name="scorer_label">Strzelec</string>
+    <string name="assist_label">Asysta</string>
+    <string name="player_label">Zawodnik</string>
+    <!-- Scorer with the assist, e.g. "Marcin (asysta: Jurek)" -->
+    <string name="player_with_assist">%1$s (asysta: %2$s)</string>
+    <string name="assist_only">asysta: %s</string>
+    <string name="note_placeholder_extra">Np. samobój, gol miesiąca</string>
     <string name="skip">Pomiń</string>
     <string name="confirm_next">Zatwierdź i dalej</string>
     <string name="save">Zapisz</string>
@@ -86,11 +92,30 @@
         <item>asysta</item>
         <item>notatka</item>
         <item>liczy_sie</item>
-        <item>nagranie</item>
     </string-array>
     <!-- CSV export: whether a goal counts towards the score -->
     <string name="csv_yes">tak</string>
     <string name="csv_no">nie</string>
+
+    <!-- Export from the match review -->
+    <string name="share">Udostępnij</string>
+    <string name="export_text">Tekst</string>
+    <string name="export_csv">CSV (arkusz)</string>
+    <string name="export_json">JSON dla platformy</string>
+    <string name="export_anyway">Eksportuj</string>
+    <string name="export_unreviewed_text">Eksportowane są tylko potwierdzone zdarzenia. Eksportować mimo to?</string>
+
+    <!-- Match lineup (phase 5) -->
+    <string name="lineup_title">Skład meczu</string>
+    <!-- Team tab: name and number of players, e.g. "Orły · 9" -->
+    <string name="lineup_tab">%1$s · %2$d</string>
+    <string name="team_name_home">Nazwa drużyny (gospodarze)</string>
+    <string name="team_name_away">Nazwa drużyny (goście)</string>
+    <string name="add_player">Dodaj zawodnika</string>
+    <string name="add_player_hint">np. 7 Marcin — Enter dodaje kolejnego</string>
+    <string name="lineup_empty">Bez zawodników — strzelca wpiszesz ręcznie przy zdarzeniu.</string>
+    <string name="lineup_tap_hint">Tapnięcie w zawodnika — poprawa numeru lub imienia.</string>
+    <string name="remove_player">Usuń: %s</string>
 
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>
@@ -109,5 +134,11 @@
         <item quantity="few">%d zdarzenia</item>
         <item quantity="many">%d zdarzeń</item>
         <item quantity="other">%d zdarzenia</item>
+    </plurals>
+    <plurals name="export_unreviewed_title">
+        <item quantity="one">%d zdarzenie nieprzejrzane</item>
+        <item quantity="few">%d zdarzenia nieprzejrzane</item>
+        <item quantity="many">%d zdarzeń nieprzejrzanych</item>
+        <item quantity="other">%d zdarzenia nieprzejrzanego</item>
     </plurals>
 </resources>

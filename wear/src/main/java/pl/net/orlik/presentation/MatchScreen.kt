@@ -7,6 +7,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,6 +76,7 @@ fun MatchScreen(
     onOpenSettings: () -> Unit,
     onToggleRecording: () -> Unit,
     onConfirmShift: () -> Unit,
+    onToggleShiftTimer: () -> Unit,
     onTogglePause: () -> Unit,
     onEndMatch: () -> Unit,
 ) {
@@ -82,7 +84,8 @@ fun MatchScreen(
         when (state) {
             MatchUiState.Loading -> Unit
             MatchUiState.NoMatch -> StartMatch(onStartMatch, onOpenSettings)
-            is MatchUiState.InProgress -> MatchInProgress(state, onToggleRecording, onConfirmShift, onTogglePause, onEndMatch)
+            is MatchUiState.InProgress ->
+                MatchInProgress(state, onToggleRecording, onConfirmShift, onToggleShiftTimer, onTogglePause, onEndMatch)
         }
     }
 }
@@ -92,6 +95,7 @@ private fun MatchInProgress(
     state: MatchUiState.InProgress,
     onToggleRecording: () -> Unit,
     onConfirmShift: () -> Unit,
+    onToggleShiftTimer: () -> Unit,
     onTogglePause: () -> Unit,
     onEndMatch: () -> Unit,
 ) {
@@ -106,7 +110,7 @@ private fun MatchInProgress(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        MatchClock(match, now, shiftState)
+        MatchClock(match, now, shiftState, onToggleShiftTimer)
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             MicButton(isRecording = state.isRecording, failedStarts = state.failedStarts, onClick = onToggleRecording)
             if (shiftState is ShiftTimerState.AwaitingConfirmation) ConfirmShiftButton(onConfirmShift)
@@ -184,7 +188,8 @@ private enum class ClockView { MATCH_TIME, WALL_TIME, SHIFT_TIME }
  * time to the next substitution (amber), then back to match time.
  */
 @Composable
-private fun MatchClock(match: ActiveMatch, now: Long, shiftState: ShiftTimerState?) {
+private fun MatchClock(match: ActiveMatch, now: Long, shiftState: ShiftTimerState?, onToggleShiftTimer: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
     var view by rememberSaveable { mutableStateOf(ClockView.MATCH_TIME) }
     val shown = if (view == ClockView.SHIFT_TIME && shiftState == null) ClockView.MATCH_TIME else view
     val context = LocalContext.current
@@ -208,7 +213,15 @@ private fun MatchClock(match: ActiveMatch, now: Long, shiftState: ShiftTimerStat
         modifier = Modifier
             // Match time and time to substitution both stand still during a pause
             .alpha(if (match.isPaused && shown != ClockView.WALL_TIME) PAUSED_CLOCK_ALPHA else 1f)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                // Holding turns the shift timer on or off (docs section 10); felt, as its arc may be hidden
+                onLongClick = {
+                    haptic.performHapticFeedback(if (shiftState == null) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                    onToggleShiftTimer()
+                },
+            ) {
                 view = when (shown) {
                     ClockView.MATCH_TIME -> ClockView.WALL_TIME
                     ClockView.WALL_TIME -> if (shiftState != null) ClockView.SHIFT_TIME else ClockView.MATCH_TIME
@@ -382,7 +395,7 @@ fun NoMatchPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.NoMatch,
-            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }
@@ -394,7 +407,7 @@ fun InProgressPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
-            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }
@@ -410,7 +423,7 @@ fun ShiftAlarmPreview() {
     MatchNotesTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
-            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onTogglePause = {}, onEndMatch = {},
+            onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},
         )
     }
 }

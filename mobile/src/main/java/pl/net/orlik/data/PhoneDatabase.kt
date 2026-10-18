@@ -8,10 +8,12 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.io.File
 
-@Database(entities = [MatchEvent::class, Match::class], version = 2)
+@Database(entities = [MatchEvent::class, Match::class, LineupPlayer::class], version = 4)
 abstract class PhoneDatabase : RoomDatabase() {
 
     abstract fun matchEventDao(): MatchEventDao
+
+    abstract fun lineupDao(): LineupDao
 
     companion object {
         @Volatile
@@ -24,7 +26,7 @@ abstract class PhoneDatabase : RoomDatabase() {
                     context.applicationContext,
                     PhoneDatabase::class.java,
                     "match_notes.db",
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
             }
     }
 }
@@ -44,6 +46,25 @@ internal val MIGRATION_1_2 = object : Migration(1, 2) {
             "CREATE TABLE IF NOT EXISTS matches (id TEXT NOT NULL, home_team TEXT, away_team TEXT, PRIMARY KEY(id))",
         )
         db.execSQL("INSERT OR IGNORE INTO matches (id) SELECT DISTINCT match_id FROM events")
+    }
+}
+
+/** Version 3 adds the scorer / player and the assist, typed in review until team rosters (phase 5). */
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE events ADD COLUMN player_name TEXT")
+        db.execSQL("ALTER TABLE events ADD COLUMN assist_name TEXT")
+    }
+}
+
+/** Version 4 adds the match lineups (phase 5). */
+internal val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS lineup_players (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "match_id TEXT NOT NULL, team TEXT NOT NULL, number INTEGER, name TEXT NOT NULL)",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_lineup_players_match_id ON lineup_players (match_id)")
     }
 }
 

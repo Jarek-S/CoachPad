@@ -1,6 +1,11 @@
 package pl.net.orlik.ui
 
 import androidx.activity.compose.BackHandler
+import pl.net.orlik.review.hasPlayer
+import pl.net.orlik.review.hasAssist
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -96,6 +101,8 @@ fun EventEditScreen(
     onType: (EventType) -> Unit,
     onTeam: (Team) -> Unit,
     onNote: (String) -> Unit,
+    onPlayer: (String) -> Unit,
+    onAssist: (String) -> Unit,
     onLinkedGoal: (String?) -> Unit,
     onSkip: () -> Unit,
     onConfirm: () -> Unit,
@@ -194,6 +201,15 @@ fun EventEditScreen(
                         }
                     }
                 }
+                if (draft.type?.hasAssist == true) {
+                    // Two short names side by side, as in the mockup
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NameField(stringResource(R.string.scorer_label), draft.player, onPlayer, Modifier.weight(1f))
+                        NameField(stringResource(R.string.assist_label), draft.assist, onAssist, Modifier.weight(1f))
+                    }
+                } else if (draft.type?.hasPlayer == true) {
+                    NameField(stringResource(R.string.player_label), draft.player, onPlayer, Modifier.fillMaxWidth())
+                }
                 if (draft.type == EventType.GOAL_DISALLOWED) {
                     GoalLink(draft, state.goalCandidates, state.match, onLinkedGoal)
                 }
@@ -201,7 +217,13 @@ fun EventEditScreen(
                     OutlinedTextField(
                         value = draft.note,
                         onValueChange = onNote,
-                        placeholder = { Text(stringResource(R.string.note_placeholder)) },
+                        placeholder = {
+                            Text(
+                                stringResource(
+                                    if (draft.type?.hasPlayer == true) R.string.note_placeholder_extra else R.string.note_placeholder,
+                                ),
+                            )
+                        },
                         minLines = 2,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -271,16 +293,32 @@ private fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** "38:50 · Gol · Rywale", with a note when the goal has one. */
+/** "38:50 · Gol · Rywale · Kuba", with the scorer (or else the note) when the goal has one. */
 @Composable
 private fun goalLabel(goal: ReviewRow, match: Match?): String {
     val parts = listOfNotNull(
         formatPlayTime(goal.playTimeMillis),
         eventTypeName(EventType.GOAL),
         goal.team?.let { teamName(it, match?.homeTeam, match?.awayTeam) },
-        goal.note,
+        playersText(goal.player, goal.assist) ?: goal.note,
     )
     return parts.joinToString(" · ")
+}
+
+/** A name typed by hand until team rosters (phase 5) offer a list to choose from. */
+@Composable
+private fun NameField(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier) {
+    Column(modifier) {
+        Field(label) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 }
 
 @Composable
@@ -395,7 +433,7 @@ private fun EventEditScreenPreview() {
                 row = ReviewRow("c", 41 * 60_000L + 2_000, null, null, null, "c.m4a", ReviewHint.DESCRIBE),
                 recordedAt = 1_791_800_000_000,
                 position = ReviewPosition(3, 3),
-                draft = EventDraft(type = EventType.GOAL_DISALLOWED, team = Team.AWAY, note = "Spalony", linkedGoalId = "g"),
+                draft = EventDraft(type = EventType.GOAL_DISALLOWED, team = Team.AWAY, note = "Spalony", linkedGoalId = "g", player = "Kowal"),
                 durationMillis = 7_000,
                 goalCandidates = listOf(ReviewRow("g", 38 * 60_000L + 50_000, EventType.GOAL, Team.AWAY, null, "g.m4a", null)),
             ),
@@ -406,6 +444,8 @@ private fun EventEditScreenPreview() {
             onType = {},
             onTeam = {},
             onNote = {},
+            onPlayer = {},
+            onAssist = {},
             onLinkedGoal = {},
             onSkip = {},
             onConfirm = {},

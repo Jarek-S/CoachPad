@@ -32,6 +32,9 @@ data class ReviewRow(
     val cancelled: Boolean = false,
     /** For a disallowed goal: play time of the goal it cancels. */
     val cancelsGoalAt: Long? = null,
+    /** The scorer of a goal, the player of a card. */
+    val player: String? = null,
+    val assist: String? = null,
 )
 
 data class MatchReview(
@@ -53,6 +56,8 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
             type = event.type,
             team = event.team,
             note = event.rawTranscript?.takeIf { it.isNotBlank() },
+            player = event.playerName,
+            assist = event.assistName,
             audioFileRef = event.audioFileRef,
             hint = hintOf(event, linked = cancelledGoal != null),
             cancelled = event.id in cancelled,
@@ -76,6 +81,14 @@ fun playClockOf(sorted: List<MatchEvent>): (Long) -> Long {
     return { at -> playTimeMillis(at, start, pauses) }
 }
 
+/** Goals (also disallowed) have a scorer, cards the player who got them. */
+val EventType.hasPlayer: Boolean
+    get() = needsTeam
+
+/** Only goals have an assist. */
+val EventType.hasAssist: Boolean
+    get() = this == EventType.GOAL || this == EventType.GOAL_DISALLOWED
+
 /** Goals and cards belong to a team; notes and structural events do not. */
 val EventType.needsTeam: Boolean
     get() = this == EventType.GOAL || this == EventType.GOAL_DISALLOWED ||
@@ -89,6 +102,17 @@ private fun hintOf(event: MatchEvent, linked: Boolean): ReviewHint? {
         type == EventType.GOAL_DISALLOWED && !linked && event.status == ReviewStatus.TO_REVIEW -> ReviewHint.NO_GOAL
         else -> null
     }
+}
+
+/**
+ * The scorer with the assist, e.g. "Marcin (asysta: Jurek)", from the app's [withAssist]
+ * ("%1$s (asysta: %2$s)") and [assistOnly] ("asysta: %s") texts; null when neither is known.
+ */
+fun playersText(player: String?, assist: String?, withAssist: String, assistOnly: String): String? = when {
+    player != null && assist != null -> withAssist.format(player, assist)
+    player != null -> player
+    assist != null -> assistOnly.format(assist)
+    else -> null
 }
 
 /** A team name as typed: trimmed, and null when left empty (the default name shows then). */

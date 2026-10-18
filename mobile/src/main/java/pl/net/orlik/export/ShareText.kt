@@ -5,6 +5,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import pl.net.orlik.data.Team
+import pl.net.orlik.review.playersText
 import pl.net.orlik.shared.EventType
 
 // The match as a short text to share, e.g. in a WhatsApp group (design doc, section 5).
@@ -21,10 +22,15 @@ data class ShareTextLabels(
     val notCounted: String,
     /** A disallowed goal with no goal to cancel, e.g. "Gol nieuznany". */
     val disallowedGoal: String,
+    /** The scorer with the assist, e.g. "%1$s (asysta: %2$s)". */
+    val playerWithAssist: String,
+    /** An assist without the scorer, e.g. "asysta: %s". */
+    val assistOnly: String,
 )
 
 /**
- * [export] as text: the teams and score, the date, then one line per goal and card. Notes
+ * [export] as text: the teams and score, the date, then one line per goal and card, with the
+ * scorer and assist (or the player of a card) and the note of extra remarks. Notes
  * ("Notatka") and structural events are left out — usually remarks not meant for everyone. A
  * disallowed goal shows on the goal it cancels.
  */
@@ -52,6 +58,7 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
         }
         val details = listOfNotNull(
             event.type.takeIf { it == EventType.GOAL_DISALLOWED }?.let { labels.disallowedGoal },
+            playersText(event.player, event.assist, labels.playerWithAssist, labels.assistOnly),
             event.note,
             event.cancelledBy?.let { byId[it] }?.let { labels.notCounted.format(footballMinute(it.playTimeMillis)) },
         )

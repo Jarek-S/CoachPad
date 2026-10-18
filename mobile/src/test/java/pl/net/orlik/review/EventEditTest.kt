@@ -32,6 +32,33 @@ class EventEditTest {
     }
 
     @Test
+    fun players_savedOnlyForTypesThatHaveThem() {
+        val draft = EventDraft(type = EventType.GOAL, player = " Marcin ", assist = "Jurek")
+        assertEquals("Marcin", draft.storedPlayer)
+        assertEquals("Jurek", draft.storedAssist)
+
+        // A card has a player but no assist; a note has neither
+        val card = draft.withType(EventType.YELLOW_CARD)
+        assertEquals("Marcin", card.storedPlayer)
+        assertNull(card.storedAssist)
+        assertNull(draft.withType(EventType.NOTE).storedPlayer)
+        assertNull(EventDraft(player = "Marcin").storedPlayer)
+
+        // Kept while editing: switching back brings them again
+        assertEquals("Jurek", card.withType(EventType.GOAL).storedAssist)
+        assertNull(EventDraft(type = EventType.GOAL, player = "  ").storedPlayer)
+    }
+
+    @Test
+    fun playersText_scorerAndAssist() {
+        fun text(player: String?, assist: String?) = playersText(player, assist, "%1${'$'}s (asysta: %2${'$'}s)", "asysta: %s")
+        assertEquals("Marcin (asysta: Jurek)", text("Marcin", "Jurek"))
+        assertEquals("Marcin", text("Marcin", null))
+        assertEquals("asysta: Jurek", text(null, "Jurek"))
+        assertNull(text(null, null))
+    }
+
+    @Test
     fun storedNote_blankIsNull() {
         assertNull(EventDraft(note = "  ").storedNote)
         assertEquals("Spalony", EventDraft(note = " Spalony\n").storedNote)

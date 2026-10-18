@@ -2,7 +2,7 @@ package pl.net.orlik.settings
 
 import pl.net.orlik.timer.ShiftTimer
 
-/** Shift timer settings, read once at match start (docs section 9). */
+/** Shift timer settings, read at match start (docs section 9); on/off also switched during a match. */
 data class ShiftTimerSettings(
     val enabled: Boolean = false,
     val intervalMinutes: Int = DEFAULT_INTERVAL_MINUTES,

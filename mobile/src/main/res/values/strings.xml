@@ -10,7 +10,6 @@
     <string name="match">Match</string>
     <string name="team_home">Home</string>
     <string name="team_away">Away</string>
-    <string name="team_names">Team names</string>
     <string name="reviewed">Reviewed</string>
     <string name="to_review">To review</string>
     <string name="confirmed">Confirmed</string>
@@ -52,7 +51,14 @@
     <string name="play_minute_recorded">match time · recorded at %s</string>
     <string name="type_label">Type</string>
     <string name="team_label">Team</string>
-    <string name="note_placeholder">E.g. who scored, who assisted</string>
+    <string name="note_placeholder">E.g. a substitution, a tactical remark</string>
+    <string name="scorer_label">Scorer</string>
+    <string name="assist_label">Assist</string>
+    <string name="player_label">Player</string>
+    <!-- Scorer with the assist, e.g. "Marcin (assist: Jurek)" -->
+    <string name="player_with_assist">%1$s (assist: %2$s)</string>
+    <string name="assist_only">assist: %s</string>
+    <string name="note_placeholder_extra">E.g. own goal, goal of the month</string>
     <string name="skip">Skip</string>
     <string name="confirm_next">Confirm and next</string>
     <string name="save">Save</string>
@@ -88,11 +94,30 @@
         <item>assist</item>
         <item>note</item>
         <item>counts</item>
-        <item>recording</item>
     </string-array>
     <!-- CSV export: whether a goal counts towards the score -->
     <string name="csv_yes">yes</string>
     <string name="csv_no">no</string>
+
+    <!-- Export from the match review -->
+    <string name="share">Share</string>
+    <string name="export_text">Text</string>
+    <string name="export_csv">CSV (spreadsheet)</string>
+    <string name="export_json">JSON for the platform</string>
+    <string name="export_anyway">Export</string>
+    <string name="export_unreviewed_text">Only confirmed events are exported. Export anyway?</string>
+
+    <!-- Match lineup (phase 5) -->
+    <string name="lineup_title">Match lineup</string>
+    <!-- Team tab: name and number of players, e.g. "Eagles · 9" -->
+    <string name="lineup_tab">%1$s · %2$d</string>
+    <string name="team_name_home">Team name (home)</string>
+    <string name="team_name_away">Team name (away)</string>
+    <string name="add_player">Add player</string>
+    <string name="add_player_hint">e.g. 7 Mark — Enter adds the next one</string>
+    <string name="lineup_empty">No players — type the scorer by hand in the event.</string>
+    <string name="lineup_tap_hint">Tap a player to correct the number or name.</string>
+    <string name="remove_player">Remove %s</string>
 
     <plurals name="recordings">
         <item quantity="one">%d recording</item>
@@ -105,5 +130,9 @@
     <plurals name="events">
         <item quantity="one">%d event</item>
         <item quantity="other">%d events</item>
+    </plurals>
+    <plurals name="export_unreviewed_title">
+        <item quantity="one">%d event not reviewed</item>
+        <item quantity="other">%d events not reviewed</item>
     </plurals>
 </resources>

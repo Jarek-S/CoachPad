@@ -15,7 +15,9 @@ class EventEdits(private val dao: MatchEventDao, private val recordingsDir: File
     suspend fun save(eventId: String, draft: EventDraft, confirm: Boolean) {
         val event = dao.event(eventId) ?: return
         val status = if (confirm) ReviewStatus.CONFIRMED else event.status
-        dao.updateReview(eventId, draft.type, draft.team, draft.storedNote, draft.storedLink, status)
+        dao.updateReview(
+            eventId, draft.type, draft.team, draft.storedNote, draft.storedLink, draft.storedPlayer, draft.storedAssist, status,
+        )
     }
 
     /**

@@ -52,10 +52,12 @@ private fun eventJsonOf(event: ExportEvent, zone: ZoneId): JsonObject = buildJso
     event.team?.let { put("team", it.name) }
     putTime("recordedAt", event.recordedAt, zone)
     put("playTimeSeconds", event.playTimeMillis / 1_000)
+    // As names only until team rosters (phase 5) add the number on the platform's list
+    event.player?.let { put("player", buildJsonObject { put("name", it) }) }
+    event.assist?.let { put("assist", buildJsonObject { put("name", it) }) }
     event.note?.let { put("note", it) }
     if (event.type == EventType.GOAL) put("counted", event.counted)
     event.cancelsGoalId?.let { put("cancelsGoalId", it) }
-    event.audioFile?.let { put("audioFile", it) }
 }
 
 /** Fields without a value are left out, so a team not named yet has no object at all. */

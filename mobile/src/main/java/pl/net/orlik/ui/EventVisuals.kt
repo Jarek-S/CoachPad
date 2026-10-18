@@ -49,6 +49,13 @@ fun matchTitle(homeTeam: String?, awayTeam: String?): String =
         "${teamName(Team.HOME, homeTeam, awayTeam)} – ${teamName(Team.AWAY, homeTeam, awayTeam)}"
     }
 
+/** "Marcin (asysta: Jurek)", or null when neither is set. */
+@Composable
+fun playersText(player: String?, assist: String?): String? =
+    pl.net.orlik.review.playersText(
+        player, assist, stringResource(R.string.player_with_assist), stringResource(R.string.assist_only),
+    )
+
 @Composable
 fun eventTypeName(type: EventType): String = stringResource(eventTypeNameRes(type))
 

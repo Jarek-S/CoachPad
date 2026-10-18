@@ -111,6 +111,7 @@ private fun MatchRoute(
             },
             onOpenSettings = onOpenSettings,
             onConfirmShift = viewModel::confirmShift,
+            onToggleShiftTimer = viewModel::toggleShiftTimer,
             onToggleRecording = {
                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                     PackageManager.PERMISSION_GRANTED

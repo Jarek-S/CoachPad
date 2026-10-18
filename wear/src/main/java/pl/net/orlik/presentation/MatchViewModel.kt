@@ -108,6 +108,15 @@ class MatchViewModel(
         matchService.update(confirmed)
     }
 
+    /** Holding the match clock: turns the shift timer on or off for the rest of the match. */
+    fun toggleShiftTimer() {
+        val match = (_state.value as? MatchUiState.InProgress)?.match ?: return
+        val updated = repository.toggleShiftTimer(match)
+        log.log(if (updated.shiftTimer != null) "shift timer on" else "shift timer off")
+        updateInProgress { it.copy(match = updated) }
+        matchService.update(updated)
+    }
+
     fun toggleRecording() {
         if (recording != null) stopRecording(StopReason.TAP) else startRecording()
     }

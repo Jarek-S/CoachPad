@@ -28,7 +28,7 @@ class PlatformJsonTest {
             ExportEvent("start", EventType.MATCH_START, null, at(14, 0, 3), 0, note = null),
             ExportEvent(
                 "g1", EventType.GOAL, Team.HOME, at(14, 12, 40, 600), 754_900, note = "strzał z woleja",
-                audioFileRef = "g1.m4a", audioFile = "2026-10-11_14-12-40.m4a",
+                player = "Marcin", assist = "Jurek",
             ),
             ExportEvent("g2", EventType.GOAL, Team.AWAY, at(14, 39, 0), 2_337_000, note = null, cancelledBy = "no"),
             ExportEvent("no", EventType.GOAL_DISALLOWED, Team.AWAY, at(14, 42, 0), 2_462_000, note = "Spalony", cancelsGoalId = "g2"),
@@ -44,7 +44,7 @@ class PlatformJsonTest {
             "score":{"home":1,"away":0},"events":[
             {"id":"start","type":"MATCH_START","recordedAt":"2026-10-11T14:00:03+02:00","playTimeSeconds":0},
             {"id":"g1","type":"GOAL","team":"HOME","recordedAt":"2026-10-11T14:12:40+02:00","playTimeSeconds":754,
-            "note":"strzał z woleja","counted":true,"audioFile":"2026-10-11_14-12-40.m4a"},
+            "player":{"name":"Marcin"},"assist":{"name":"Jurek"},"note":"strzał z woleja","counted":true},
             {"id":"g2","type":"GOAL","team":"AWAY","recordedAt":"2026-10-11T14:39:00+02:00","playTimeSeconds":2337,
             "counted":false},
             {"id":"no","type":"GOAL_DISALLOWED","team":"AWAY","recordedAt":"2026-10-11T14:42:00+02:00",
