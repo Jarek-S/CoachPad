@@ -94,6 +94,8 @@ class MainActivity : ComponentActivity() {
                             MatchesScreen(
                                 state = state,
                                 onOpenMatch = { navController.navigate("$MATCH/$it") },
+                                onOpenPlanned = { navController.navigate("$MATCH/$it/$LINEUP") },
+                                onNewMatch = { viewModel.plan { navController.navigate("$MATCH/$it/$LINEUP") } },
                                 onOpenSync = { navController.navigate(SYNC) },
                                 onOpenSettings = { navController.navigate(SETTINGS) },
                                 onDeleteMatch = viewModel::delete,

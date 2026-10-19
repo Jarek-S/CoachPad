@@ -19,6 +19,7 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +52,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +60,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.net.orlik.R
+import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.PhoneDatabase
@@ -88,6 +91,15 @@ class MatchesViewModel(
         MatchesUiState(list, summary?.matches?.size ?: 0)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchesUiState())
 
+    /** Creates a match planned before kickoff and passes its id on, to open its lineups. */
+    fun plan(onPlanned: (String) -> Unit) {
+        viewModelScope.launch {
+            val id = UUID.randomUUID().toString()
+            dao.insertMatch(Match(id, plannedAt = System.currentTimeMillis()))
+            onPlanned(id)
+        }
+    }
+
     fun delete(matchId: String) {
         viewModelScope.launch { deleteMatch(dao, recordingsDir, matchId) }
     }
@@ -101,12 +113,17 @@ class MatchesViewModel(
     }
 }
 
-/** Start screen: the matches on the phone, and the way to sync more from the watch; holding a match deletes it. */
+/**
+ * Start screen: the matches on the phone, and the way to sync more from the watch or plan the next
+ * one; holding a match deletes it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchesScreen(
     state: MatchesUiState,
     onOpenMatch: (String) -> Unit,
+    onOpenPlanned: (String) -> Unit,
+    onNewMatch: () -> Unit,
     onOpenSync: () -> Unit,
     onOpenSettings: () -> Unit,
     onDeleteMatch: (String) -> Unit,
@@ -134,6 +151,13 @@ fun MatchesScreen(
                 },
             )
         },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onNewMatch,
+                icon = { Icon(painterResource(R.drawable.ic_add), null) },
+                text = { Text(stringResource(R.string.new_match)) },
+            )
+        },
     ) { padding ->
         val matches = state.matches
         if (matches != null && matches.isEmpty()) {
@@ -153,12 +177,17 @@ fun MatchesScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = padding.calculateTopPadding() + 8.dp,
-                bottom = padding.calculateBottomPadding() + 16.dp,
+                // Room for the "Nowy mecz" button over the end of the list
+                bottom = padding.calculateBottomPadding() + 88.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(matches.orEmpty(), key = { it.matchId }) { match ->
-                MatchCard(match, onClick = { onOpenMatch(match.matchId) }, onLongClick = { toDelete = match.matchId })
+                MatchCard(
+                    match,
+                    onClick = { if (match.isPlanned) onOpenPlanned(match.matchId) else onOpenMatch(match.matchId) },
+                    onLongClick = { toDelete = match.matchId },
+                )
             }
             if (matches.orEmpty().isNotEmpty()) {
                 item {
@@ -197,17 +226,23 @@ private fun MatchCard(match: MatchListItem, onClick: () -> Unit, onLongClick: ()
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(matchTitle(match.homeTeam, match.awayTeam), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    formatMatchStart(match.startedAt),
+                    matchWhen(match),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    pluralStringResource(R.plurals.recordings, match.recordings, match.recordings),
+                    if (match.isPlanned) {
+                        pluralStringResource(R.plurals.players, match.players, match.players)
+                    } else {
+                        pluralStringResource(R.plurals.recordings, match.recordings, match.recordings)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (match.toReview > 0) {
+            if (match.isPlanned) {
+                // Nothing to review before kickoff
+            } else if (match.toReview > 0) {
                 Text(
                     pluralStringResource(R.plurals.to_review_count, match.toReview, match.toReview),
                     color = ReviewText,
@@ -232,7 +267,7 @@ private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDis
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.delete_phone_match_title)) },
         text = {
-            Text(stringResource(R.string.delete_phone_match_text, matchTitle(match.homeTeam, match.awayTeam), formatMatchStart(match.startedAt)))
+            Text(stringResource(R.string.delete_phone_match_text, matchTitle(match.homeTeam, match.awayTeam), matchWhen(match)))
         },
         confirmButton = {
             // Red like "Usuń" for a match still on the watch: it cannot be undone
@@ -242,6 +277,11 @@ private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDis
     )
 }
 
+/** The match's start, or "Zaplanowany" before kickoff. */
+@Composable
+private fun matchWhen(match: MatchListItem): String =
+    match.startedAt?.let { formatMatchStart(it) } ?: stringResource(R.string.planned_match)
+
 @Preview
 @Composable
 private fun MatchesScreenPreview() {
@@ -249,12 +289,15 @@ private fun MatchesScreenPreview() {
         MatchesScreen(
             state = MatchesUiState(
                 matches = listOf(
+                    MatchListItem("p1", "Orły", "Sokoły", null, toReview = 0, recordings = 0, players = 14),
                     MatchListItem("m1", "Orły", "Rywale FC", 1_791_800_000_000, toReview = 3, recordings = 12),
                     MatchListItem("m2", null, null, 1_791_200_000_000, toReview = 0, recordings = 4),
                 ),
                 pendingOnWatch = 1,
             ),
             onOpenMatch = {},
+            onOpenPlanned = {},
+            onNewMatch = {},
             onOpenSync = {},
             onOpenSettings = {},
             onDeleteMatch = {},

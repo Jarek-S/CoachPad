@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import pl.net.orlik.review.PlannedMatch
 import pl.net.orlik.shared.EventType
 
 enum class Team { HOME, AWAY }
@@ -86,7 +87,10 @@ data class MatchEvent(
 fun initialStatus(type: EventType?): ReviewStatus =
     if (type?.isStructural == true) ReviewStatus.CONFIRMED else ReviewStatus.TO_REVIEW
 
-/** A match as the phone knows it. Team names are set on the phone; null until then. */
+/**
+ * A match as the phone knows it. Team names are set on the phone; null until then. A match
+ * planned on the phone before kickoff has its own id until a watch match takes it over.
+ */
 @Entity(tableName = "matches")
 data class Match(
     @PrimaryKey
@@ -97,6 +101,10 @@ data class Match(
 
     @ColumnInfo(name = "away_team")
     val awayTeam: String? = null,
+
+    /** Epoch milliseconds when the match was planned on the phone; null for a match from the watch. */
+    @ColumnInfo(name = "planned_at")
+    val plannedAt: Long? = null,
 )
 
 /** One row of the match list. */
@@ -104,11 +112,16 @@ data class MatchListItem(
     val matchId: String,
     val homeTeam: String?,
     val awayTeam: String?,
-    /** Time of the match's first event (MATCH_START when it was synced). */
-    val startedAt: Long,
+    /** Time of the match's first event (MATCH_START when it was synced); null for a planned match. */
+    val startedAt: Long?,
     val toReview: Int,
     val recordings: Int,
-)
+    /** Players in both lineups. */
+    val players: Int = 0,
+) {
+    /** Planned on the phone, nothing from the watch yet. */
+    val isPlanned: Boolean get() = startedAt == null
+}
 
 @Dao
 interface MatchEventDao {
@@ -124,6 +137,35 @@ interface MatchEventDao {
     @Query("SELECT EXISTS(SELECT 1 FROM events WHERE id = :id)")
     suspend fun exists(id: String): Boolean
 
+    @Query("SELECT EXISTS(SELECT 1 FROM matches WHERE id = :matchId)")
+    suspend fun matchExists(matchId: String): Boolean
+
+    /** Planned matches without events yet; one with neither team names nor players plans nothing. */
+    @Query(
+        """
+        SELECT id, planned_at AS plannedAt FROM matches m
+        WHERE planned_at IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM events e WHERE e.match_id = m.id)
+            AND (home_team IS NOT NULL OR away_team IS NOT NULL
+                OR EXISTS (SELECT 1 FROM lineup_players p WHERE p.match_id = m.id))
+        """,
+    )
+    suspend fun plannedMatches(): List<PlannedMatch>
+
+    @Query("INSERT INTO matches (id, home_team, away_team) SELECT :matchId, home_team, away_team FROM matches WHERE id = :plannedId")
+    suspend fun copyTeamNames(plannedId: String, matchId: String)
+
+    @Query("UPDATE lineup_players SET match_id = :matchId WHERE match_id = :plannedId")
+    suspend fun moveLineup(plannedId: String, matchId: String)
+
+    /** A match from the watch, new to the phone, takes the team names and lineups of a planned match, which goes. */
+    @Transaction
+    suspend fun takeOverPlanned(plannedId: String, matchId: String) {
+        copyTeamNames(plannedId, matchId)
+        moveLineup(plannedId, matchId)
+        deleteMatchRow(plannedId)
+    }
+
     /** A match's events in time order, mistakes removed in review left out. */
     @Query("SELECT * FROM events WHERE match_id = :matchId AND status != 'DELETED' ORDER BY recorded_at")
     fun eventsOf(matchId: String): Flow<List<MatchEvent>>
@@ -131,16 +173,19 @@ interface MatchEventDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     fun match(matchId: String): Flow<Match?>
 
-    /** Matches on the phone, newest first. */
+    /** Matches on the phone: planned ones first, then newest first. */
     @Query(
         """
-        SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam,
-            (SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id) AS startedAt,
-            (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
-            (SELECT COUNT(*) FROM events e
-                WHERE e.match_id = m.id AND e.audio_file_ref IS NOT NULL AND e.status != 'DELETED') AS recordings
-        FROM matches m
-        ORDER BY startedAt DESC
+        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players FROM (
+            SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
+                (SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id) AS startedAt,
+                (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
+                (SELECT COUNT(*) FROM events e
+                    WHERE e.match_id = m.id AND e.audio_file_ref IS NOT NULL AND e.status != 'DELETED') AS recordings,
+                (SELECT COUNT(*) FROM lineup_players p WHERE p.match_id = m.id) AS players
+            FROM matches m
+        )
+        ORDER BY startedAt IS NOT NULL, COALESCE(startedAt, plannedAt) DESC
         """,
     )
     fun matches(): Flow<List<MatchListItem>>

@@ -2,12 +2,14 @@ package pl.net.orlik.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import pl.net.orlik.review.PlannedMatch
 import pl.net.orlik.shared.EventType
 
 /** In-memory stand-in for Room in JVM tests. */
 class FakeDao : MatchEventDao {
     val events = mutableListOf<MatchEvent>()
     val matches = mutableListOf<Match>()
+    val lineup = mutableListOf<LineupPlayer>()
 
     override suspend fun insert(event: MatchEvent) {
         if (events.none { it.id == event.id }) events += event
@@ -18,6 +20,23 @@ class FakeDao : MatchEventDao {
     }
 
     override suspend fun exists(id: String) = events.any { it.id == id }
+
+    override suspend fun matchExists(matchId: String) = matches.any { it.id == matchId }
+
+    override suspend fun plannedMatches() = matches
+        .filter { m ->
+            m.plannedAt != null && events.none { it.matchId == m.id } &&
+                (m.homeTeam != null || m.awayTeam != null || lineup.any { it.matchId == m.id })
+        }
+        .map { PlannedMatch(it.id, it.plannedAt!!) }
+
+    override suspend fun copyTeamNames(plannedId: String, matchId: String) {
+        matches.firstOrNull { it.id == plannedId }?.let { matches += Match(matchId, it.homeTeam, it.awayTeam) }
+    }
+
+    override suspend fun moveLineup(plannedId: String, matchId: String) {
+        lineup.replaceAll { if (it.matchId == plannedId) it.copy(matchId = matchId) else it }
+    }
 
     override fun count(): Flow<Int> = flowOf(events.size)
 

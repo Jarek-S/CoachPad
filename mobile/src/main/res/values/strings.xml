@@ -48,6 +48,8 @@
     <string name="delete_phone_match_title">Delete the match?</string>
     <string name="delete_phone_match_text">%1$s, %2$s. All its events, recordings and team lineups will be deleted from the phone. This cannot be undone.</string>
     <string name="delete_match_hint">Hold a match to delete it</string>
+    <string name="new_match">New match</string>
+    <string name="planned_match">Planned</string>
     <string name="sync_no_response">The watch stopped responding. The data is still on the watch — try again.</string>
 
     <string name="edit_position">To review · %1$d of %2$d</string>
@@ -151,6 +153,10 @@
     <!-- Words said in recordings, given to speech recognition so it spells them right; comma separated -->
     <string name="stt_hint_words">goal, assist, yellow card, red card, disallowed goal, note</string>
 
+    <plurals name="players">
+        <item quantity="one">%d player</item>
+        <item quantity="other">%d players</item>
+    </plurals>
     <plurals name="recordings">
         <item quantity="one">%d recording</item>
         <item quantity="other">%d recordings</item>

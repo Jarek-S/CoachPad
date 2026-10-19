@@ -46,6 +46,8 @@
     <string name="delete_phone_match_title">Usunąć mecz?</string>
     <string name="delete_phone_match_text">%1$s, %2$s. Wszystkie zdarzenia, nagrania i składy tego meczu zostaną usunięte z telefonu. Tej operacji nie można cofnąć.</string>
     <string name="delete_match_hint">Przytrzymaj mecz, aby go usunąć</string>
+    <string name="new_match">Nowy mecz</string>
+    <string name="planned_match">Zaplanowany</string>
     <string name="sync_no_response">Zegarek przestał odpowiadać. Dane zostały na zegarku — spróbuj ponownie.</string>
 
     <string name="edit_position">Do przejrzenia · %1$d z %2$d</string>
@@ -149,6 +151,12 @@
     <!-- Words said in recordings, given to speech recognition so it spells them right; comma separated -->
     <string name="stt_hint_words">gol, asysta, żółta kartka, czerwona kartka, gol nieuznany, notatka</string>
 
+    <plurals name="players">
+        <item quantity="one">%d zawodnik</item>
+        <item quantity="few">%d zawodników</item>
+        <item quantity="many">%d zawodników</item>
+        <item quantity="other">%d zawodnika</item>
+    </plurals>
     <plurals name="recordings">
         <item quantity="one">%d nagranie</item>
         <item quantity="few">%d nagrania</item>

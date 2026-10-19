@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.review.plannedMatchFor
 import pl.net.orlik.shared.sync.EventMetadata
 
 /**
@@ -57,6 +58,10 @@ class EventReceiver(
     }
 
     private suspend fun store(metadata: EventMetadata) {
+        // Before the events, so speech-to-text after the sync already has the planned lineup
+        if (!dao.matchExists(metadata.matchId)) {
+            plannedMatchFor(metadata.recordedAt, dao.plannedMatches())?.let { dao.takeOverPlanned(it, metadata.matchId) }
+        }
         dao.insertMatch(Match(metadata.matchId))
         dao.insert(
             MatchEvent(

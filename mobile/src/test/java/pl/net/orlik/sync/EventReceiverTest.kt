@@ -9,9 +9,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.net.orlik.data.FakeDao
+import pl.net.orlik.data.LineupPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.ReviewStatus
+import pl.net.orlik.data.Team
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.sync.EventMetadata
 
@@ -86,5 +88,47 @@ class EventReceiverTest {
         assertFalse(File(recordingsDir, "r1.m4a").exists())
         assertFalse(receiver.onMetadata(recording))
         assertNull(dao.events.firstOrNull())
+    }
+
+    @Test
+    fun newMatch_takesOverTheOnlyPlannedMatch() = runBlocking {
+        dao.matches += Match("p1", "Orły", "Rywale FC", plannedAt = 500)
+        dao.lineup += LineupPlayer(1, "p1", Team.HOME, 7, "Marcin")
+
+        receiver.onMetadata(start)
+
+        assertEquals(listOf(Match("m1", "Orły", "Rywale FC")), dao.matches)
+        assertEquals("m1", dao.lineup.single().matchId)
+    }
+
+    @Test
+    fun laterEvents_ofAKnownMatch_takeNoPlannedMatch() = runBlocking {
+        receiver.onMetadata(start)
+        dao.matches += Match("p1", "Orły", null, plannedAt = 1_500)
+
+        receiver.onMetadata(recording)
+        receiver.onAudio("r1", "audio".byteInputStream())
+
+        assertEquals(listOf(Match("m1"), Match("p1", "Orły", null, plannedAt = 1_500)), dao.matches)
+    }
+
+    @Test
+    fun emptyPlannedMatch_isNotTakenOver() = runBlocking {
+        dao.matches += Match("p1", plannedAt = 500)
+
+        receiver.onMetadata(start)
+
+        assertEquals(listOf(Match("p1", plannedAt = 500), Match("m1")), dao.matches)
+    }
+
+    @Test
+    fun severalPlannedMatches_areLeftAlone() = runBlocking {
+        dao.matches += Match("p1", "Orły", null, plannedAt = 500)
+        dao.matches += Match("p2", "Sokoły", null, plannedAt = 600)
+
+        receiver.onMetadata(start)
+
+        assertEquals(Match("m1"), dao.matches.last())
+        assertEquals(3, dao.matches.size)
     }
 }

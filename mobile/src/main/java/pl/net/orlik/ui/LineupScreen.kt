@@ -102,9 +102,9 @@ fun LineupScreen(
                 title = {
                     Column {
                         Text(stringResource(R.string.lineup_title))
-                        state.startedAt?.let {
-                            Text(formatMatchStart(it), style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted)
-                        }
+                        val subtitle = state.startedAt?.let { formatMatchStart(it) }
+                            ?: state.match?.plannedAt?.let { stringResource(R.string.planned_match) }
+                        subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted) }
                     }
                 },
             )
