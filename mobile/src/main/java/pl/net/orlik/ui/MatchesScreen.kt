@@ -240,22 +240,26 @@ private fun MatchCard(match: MatchListItem, onClick: () -> Unit, onLongClick: ()
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (match.isPlanned) {
-                // Nothing to review before kickoff
-            } else if (match.toReview > 0) {
-                Text(
-                    pluralStringResource(R.plurals.to_review_count, match.toReview, match.toReview),
-                    color = ReviewText,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.background(ReviewBadge, RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
-                )
-            } else {
-                Text(
-                    stringResource(R.string.reviewed),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelLarge,
-                )
+            if (!match.isPlanned) {
+                // The score of the goals confirmed so far; while some events wait, it is provisional and
+                // muted, with what is left to review under it
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.match_score, match.homeGoals, match.awayGoals),
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (match.toReview > 0) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                    )
+                    if (match.toReview > 0) {
+                        Text(
+                            pluralStringResource(R.plurals.to_review_count, match.toReview, match.toReview),
+                            color = ReviewText,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.background(ReviewBadge, RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -290,8 +294,8 @@ private fun MatchesScreenPreview() {
             state = MatchesUiState(
                 matches = listOf(
                     MatchListItem("p1", "Orły", "Sokoły", null, toReview = 0, recordings = 0, players = 14),
-                    MatchListItem("m1", "Orły", "Rywale FC", 1_791_800_000_000, toReview = 3, recordings = 12),
-                    MatchListItem("m2", null, null, 1_791_200_000_000, toReview = 0, recordings = 4),
+                    MatchListItem("m1", "Orły", "Rywale FC", 1_791_800_000_000, toReview = 3, recordings = 12, homeGoals = 1),
+                    MatchListItem("m2", null, null, 1_791_200_000_000, toReview = 0, recordings = 4, homeGoals = 3, awayGoals = 1),
                 ),
                 pendingOnWatch = 1,
             ),

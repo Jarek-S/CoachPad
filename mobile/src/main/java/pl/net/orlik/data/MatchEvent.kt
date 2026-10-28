@@ -107,6 +107,17 @@ data class Match(
     val plannedAt: Long? = null,
 )
 
+/**
+ * A confirmed goal `g` not cancelled by a confirmed disallowed goal: the same rule as the score in
+ * [pl.net.orlik.export.matchExportOf].
+ */
+private const val COUNTED_GOAL = """
+    g.type = 'GOAL' AND g.status = 'CONFIRMED' AND NOT EXISTS (
+        SELECT 1 FROM events d WHERE d.match_id = g.match_id AND d.type = 'GOAL_DISALLOWED'
+            AND d.status = 'CONFIRMED' AND d.linked_goal_event_id = g.id
+    )
+"""
+
 /** One row of the match list. */
 data class MatchListItem(
     val matchId: String,
@@ -118,6 +129,9 @@ data class MatchListItem(
     val recordings: Int,
     /** Players in both lineups. */
     val players: Int = 0,
+    /** Counted goals, as in the export: confirmed and not cancelled by a confirmed disallowed goal. */
+    val homeGoals: Int = 0,
+    val awayGoals: Int = 0,
 ) {
     /** Planned on the phone, nothing from the watch yet. */
     val isPlanned: Boolean get() = startedAt == null
@@ -186,13 +200,15 @@ interface MatchEventDao {
     /** Matches on the phone: planned ones first, then newest first. */
     @Query(
         """
-        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players FROM (
+        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals FROM (
             SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
                 (SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id) AS startedAt,
                 (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
                 (SELECT COUNT(*) FROM events e
                     WHERE e.match_id = m.id AND e.audio_file_ref IS NOT NULL AND e.status != 'DELETED') AS recordings,
-                (SELECT COUNT(*) FROM lineup_players p WHERE p.match_id = m.id) AS players
+                (SELECT COUNT(*) FROM lineup_players p WHERE p.match_id = m.id) AS players,
+                (SELECT COUNT(*) FROM events g WHERE g.match_id = m.id AND g.team = 'HOME' AND $COUNTED_GOAL) AS homeGoals,
+                (SELECT COUNT(*) FROM events g WHERE g.match_id = m.id AND g.team = 'AWAY' AND $COUNTED_GOAL) AS awayGoals
             FROM matches m
         )
         ORDER BY startedAt IS NOT NULL, COALESCE(startedAt, plannedAt) DESC

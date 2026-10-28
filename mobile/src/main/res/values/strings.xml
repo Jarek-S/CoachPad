@@ -10,7 +10,8 @@
     <string name="match">Match</string>
     <string name="team_home">Home</string>
     <string name="team_away">Away</string>
-    <string name="reviewed">Reviewed</string>
+    <!-- Score of a reviewed match on the match list, home:away -->
+    <string name="match_score" translatable="false">%1$d:%2$d</string>
     <string name="to_review">To review</string>
     <string name="confirmed">Confirmed</string>
     <string name="all_reviewed">All reviewed.</string>

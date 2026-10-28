@@ -8,7 +8,6 @@
     <string name="match">Mecz</string>
     <string name="team_home">Gospodarze</string>
     <string name="team_away">Goście</string>
-    <string name="reviewed">Przejrzany</string>
     <string name="to_review">Do przejrzenia</string>
     <string name="confirmed">Potwierdzone</string>
     <string name="all_reviewed">Wszystko przejrzane.</string>
