@@ -48,6 +48,10 @@
     <string name="delete_match_hint">Przytrzymaj mecz, aby go usunąć</string>
     <string name="new_match">Nowy mecz</string>
     <string name="planned_match">Zaplanowany</string>
+    <string name="planned_offer">Ten mecz nie ma składu. Wziąć go z meczu zaplanowanego?</string>
+    <string name="take_over_planned">Połącz</string>
+    <string name="take_over_planned_title">Połącz z meczem zaplanowanym</string>
+    <string name="take_over_planned_text">Ten mecz przejmie nazwy drużyn i składy wybranego meczu, a mecz zaplanowany zniknie z listy.</string>
     <string name="sync_no_response">Zegarek przestał odpowiadać. Dane zostały na zegarku — spróbuj ponownie.</string>
 
     <string name="edit_position">Do przejrzenia · %1$d z %2$d</string>

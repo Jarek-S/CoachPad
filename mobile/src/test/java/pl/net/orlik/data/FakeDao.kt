@@ -31,7 +31,8 @@ class FakeDao : MatchEventDao {
         .map { PlannedMatch(it.id, it.plannedAt!!) }
 
     override suspend fun copyTeamNames(plannedId: String, matchId: String) {
-        matches.firstOrNull { it.id == plannedId }?.let { matches += Match(matchId, it.homeTeam, it.awayTeam) }
+        val planned = matches.firstOrNull { it.id == plannedId } ?: return
+        matches.replaceAll { if (it.id == matchId) it.copy(homeTeam = planned.homeTeam, awayTeam = planned.awayTeam) else it }
     }
 
     override suspend fun moveLineup(plannedId: String, matchId: String) {

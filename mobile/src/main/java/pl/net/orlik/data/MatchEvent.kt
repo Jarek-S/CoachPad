@@ -152,15 +152,25 @@ interface MatchEventDao {
     )
     suspend fun plannedMatches(): List<PlannedMatch>
 
-    @Query("INSERT INTO matches (id, home_team, away_team) SELECT :matchId, home_team, away_team FROM matches WHERE id = :plannedId")
+    @Query(
+        """
+        UPDATE matches SET home_team = (SELECT home_team FROM matches WHERE id = :plannedId),
+            away_team = (SELECT away_team FROM matches WHERE id = :plannedId)
+        WHERE id = :matchId
+        """,
+    )
     suspend fun copyTeamNames(plannedId: String, matchId: String)
 
     @Query("UPDATE lineup_players SET match_id = :matchId WHERE match_id = :plannedId")
     suspend fun moveLineup(plannedId: String, matchId: String)
 
-    /** A match from the watch, new to the phone, takes the team names and lineups of a planned match, which goes. */
+    /**
+     * A match from the watch takes the team names and lineups of a planned match, which goes: on
+     * its first sync, or chosen later in its review.
+     */
     @Transaction
     suspend fun takeOverPlanned(plannedId: String, matchId: String) {
+        insertMatch(Match(matchId))
         copyTeamNames(plannedId, matchId)
         moveLineup(plannedId, matchId)
         deleteMatchRow(plannedId)

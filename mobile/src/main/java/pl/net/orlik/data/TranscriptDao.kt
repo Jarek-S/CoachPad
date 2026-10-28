@@ -26,6 +26,13 @@ interface TranscriptDao {
     )
     suspend fun matchesWithUntranscribed(): List<String>
 
+    /** Recognised recordings still under "Do przejrzenia", read again when the match gets a lineup. */
+    @Query(
+        "SELECT * FROM events WHERE match_id = :matchId AND status = 'TO_REVIEW' AND transcript IS NOT NULL " +
+            "ORDER BY recorded_at",
+    )
+    suspend fun transcribed(matchId: String): List<MatchEvent>
+
     @Query("UPDATE events SET transcript = :text WHERE id = :id")
     suspend fun setTranscript(id: String, text: String)
 }

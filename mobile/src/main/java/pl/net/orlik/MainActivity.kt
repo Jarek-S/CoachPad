@@ -140,6 +140,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("$MATCH/$matchId/$EVENT/$it")
                                 },
                                 onTranscribe = viewModel::transcribe,
+                                onTakeOverPlanned = viewModel::takeOverPlanned,
                                 onOpenLineup = {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$LINEUP")

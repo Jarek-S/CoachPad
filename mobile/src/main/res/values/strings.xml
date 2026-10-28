@@ -50,6 +50,10 @@
     <string name="delete_match_hint">Hold a match to delete it</string>
     <string name="new_match">New match</string>
     <string name="planned_match">Planned</string>
+    <string name="planned_offer">This match has no lineup. Take it from a planned match?</string>
+    <string name="take_over_planned">Join</string>
+    <string name="take_over_planned_title">Join with a planned match</string>
+    <string name="take_over_planned_text">This match takes the team names and lineups of the chosen match, which then leaves the list.</string>
     <string name="sync_no_response">The watch stopped responding. The data is still on the watch — try again.</string>
 
     <string name="edit_position">To review · %1$d of %2$d</string>

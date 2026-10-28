@@ -18,10 +18,12 @@ import pl.net.orlik.R
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.review.EventDraft
 import pl.net.orlik.review.TranscriptReading
 import pl.net.orlik.review.draftOf
 import pl.net.orlik.review.filledFrom
 import pl.net.orlik.review.readTranscript
+import pl.net.orlik.review.refilledFrom
 import pl.net.orlik.review.relinked
 
 sealed interface TranscriptionStatus {
@@ -81,6 +83,25 @@ class Transcriber private constructor(private val context: Context) {
         }
     }
 
+    /**
+     * After a match without a lineup took over a planned one: its recognised recordings read again
+     * with the lineup, so names match the players. No speech-to-text call, so no key is needed.
+     */
+    fun reread(matchId: String) {
+        scope.launch {
+            mutex.withLock {
+                val players = lineup.lineupOf(matchId).first()
+                val match = events.match(matchId).first()
+                for (event in transcripts.transcribed(matchId)) {
+                    val text = event.transcript ?: continue
+                    val earlier = readTranscript(text, emptyList(), null, null)
+                    val now = readTranscript(text, players, match?.homeTeam, match?.awayTeam)
+                    update(event) { it.refilledFrom(earlier, now) }
+                }
+            }
+        }
+    }
+
     /** False when it stopped on a failure; the same failure would stop the next match too. */
     private suspend fun transcribeMatch(matchId: String): Boolean {
         val waiting = transcripts.untranscribed(matchId)
@@ -108,11 +129,14 @@ class Transcriber private constructor(private val context: Context) {
         return true
     }
 
-    /** Saves the reading into the fields still empty, read again in case the review changed them meanwhile. */
-    private suspend fun fill(stale: MatchEvent, reading: TranscriptReading) {
+    /** Saves the reading into the fields still empty. */
+    private suspend fun fill(stale: MatchEvent, reading: TranscriptReading) = update(stale) { it.filledFrom(reading) }
+
+    /** Saves what [change] makes of the event, read again in case the review changed it meanwhile. */
+    private suspend fun update(stale: MatchEvent, change: (EventDraft) -> EventDraft) {
         val event = events.event(stale.id) ?: return
         val before = draftOf(event)
-        var draft = before.filledFrom(reading)
+        var draft = change(before)
         if (draft == before) return
         if (draft.type != before.type || draft.team != before.team) {
             draft = relinked(draft, event, events.eventsOf(event.matchId).first())

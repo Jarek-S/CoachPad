@@ -22,6 +22,7 @@ import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.TranscriptDao
 import pl.net.orlik.data.recordingsDir
@@ -29,6 +30,7 @@ import pl.net.orlik.export.MatchExport
 import pl.net.orlik.export.matchExportOf
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.matchReviewOf
+import pl.net.orlik.review.plannedChoices
 import pl.net.orlik.stt.Transcriber
 import pl.net.orlik.stt.TranscriptionStatus
 
@@ -42,6 +44,8 @@ data class MatchReviewUiState(
     /** Event whose recording is playing. */
     val playingId: String? = null,
     val stt: SttUiState = SttUiState(),
+    /** Planned matches this match can take its lineups from; empty once it has any. */
+    val planned: List<MatchListItem> = emptyList(),
 )
 
 /** Speech recognition for this match: what "Rozpoznaj" offers and how far it got. */
@@ -97,13 +101,15 @@ class MatchReviewViewModel(
         SttUiState(available, untranscribed, if (ours) status else TranscriptionStatus.Idle)
     }
 
+    private val sttAndPlanned = combine(stt, dao.matches()) { stt, matches -> stt to plannedChoices(matches, matchId) }
+
     val state: StateFlow<MatchReviewUiState> = combine(
         dao.match(matchId),
         events,
         durations,
         player.playingId,
-        stt,
-    ) { match, list, durations, playingId, stt ->
+        sttAndPlanned,
+    ) { match, list, durations, playingId, (stt, planned) ->
         MatchReviewUiState(
             match = match,
             startedAt = list.minOfOrNull { it.recordedAt },
@@ -111,6 +117,7 @@ class MatchReviewViewModel(
             durations = durations,
             playingId = playingId,
             stt = stt,
+            planned = planned,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchReviewUiState())
 
@@ -123,6 +130,14 @@ class MatchReviewViewModel(
 
     /** "Rozpoznaj nagrania": recordings of this match not recognised yet. */
     fun transcribe() = transcriber.start(matchId)
+
+    /** Takes the team names and lineups of a planned match, then reads the recognised recordings again with them. */
+    fun takeOverPlanned(plannedId: String) {
+        viewModelScope.launch {
+            dao.takeOverPlanned(plannedId, matchId)
+            transcriber.reread(matchId)
+        }
+    }
 
     /** The match as it is now, for "Udostępnij". */
     suspend fun export(): MatchExport = matchExportOf(dao.match(matchId).first() ?: Match(matchId), events.first())

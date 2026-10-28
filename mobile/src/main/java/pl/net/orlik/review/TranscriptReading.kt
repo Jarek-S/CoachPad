@@ -86,6 +86,22 @@ fun EventDraft.filledFrom(reading: TranscriptReading): EventDraft {
     )
 }
 
+/**
+ * Reads a recording again once the match has a lineup: a field still holding what the reading
+ * without it put there (or nothing) takes the new reading; what was changed by hand stays. A field
+ * the new reading cannot fill keeps its earlier value.
+ */
+fun EventDraft.refilledFrom(earlier: TranscriptReading, now: TranscriptReading): EventDraft {
+    fun <T> pick(current: T?, before: T?, after: T?): T? = if (current == null || current == before) after ?: current else current
+    val type = pick(type, earlier.type, now.type) ?: return this
+    return copy(
+        type = type,
+        team = pick(team, earlier.team, now.team).takeIf { type.needsTeam },
+        player = pick(player.ifBlank { null }, earlier.player, now.player).orEmpty(),
+        assist = pick(assist.ifBlank { null }, earlier.assist, now.assist).orEmpty(),
+    )
+}
+
 private enum class Role { PLAYER, ASSIST }
 
 /** A name found in the text, the lineup player's team, and how many words it took. */

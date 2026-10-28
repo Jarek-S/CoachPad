@@ -147,4 +147,34 @@ class TranscriptReadingTest {
         assertEquals(1, levenshtein("lukas", "lukasz"))
         assertEquals(3, levenshtein("kitten", "sitting"))
     }
+
+    @Test
+    fun refilledFrom_replacesWhatTheReadingWithoutLineupPut() {
+        // "Marcinem" without a lineup, the player "Marcin" with it
+        val earlier = TranscriptReading(EventType.GOAL, null, "Marcinem", null)
+        val now = TranscriptReading(EventType.GOAL, Team.HOME, "Marcin", "Adam")
+        assertEquals(
+            EventDraft(EventType.GOAL, Team.HOME, player = "Marcin", assist = "Adam"),
+            EventDraft(EventType.GOAL, player = "Marcinem").refilledFrom(earlier, now),
+        )
+    }
+
+    @Test
+    fun refilledFrom_keepsWhatWasChangedByHand() {
+        val earlier = TranscriptReading(EventType.GOAL, null, "Marcinem", null)
+        val now = TranscriptReading(EventType.GOAL, Team.HOME, "Marcin", null)
+        assertEquals(
+            EventDraft(EventType.GOAL, Team.AWAY, player = "Benek"),
+            EventDraft(EventType.GOAL, Team.AWAY, player = "Benek").refilledFrom(earlier, now),
+        )
+    }
+
+    @Test
+    fun refilledFrom_keepsTheEarlierValueTheNewReadingLacks() {
+        val earlier = TranscriptReading(EventType.GOAL, null, "Zenek", null)
+        assertEquals(
+            EventDraft(EventType.GOAL, player = "Zenek"),
+            EventDraft(EventType.GOAL, player = "Zenek").refilledFrom(earlier, TranscriptReading(EventType.GOAL)),
+        )
+    }
 }
