@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "pl.net.orlik"
+        applicationId = "eu.coachpad"
         minSdk = 30
         targetSdk = 37
         versionCode = 1
