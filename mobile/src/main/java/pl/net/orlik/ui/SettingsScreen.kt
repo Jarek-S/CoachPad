@@ -32,10 +32,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -120,6 +125,8 @@ private fun ApiKey(
     onDeleteKey: () -> Unit,
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val autofill = LocalAutofillManager.current
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(R.string.api_key_label),
@@ -127,7 +134,8 @@ private fun ApiKey(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (state.editingKey) {
-            // Hidden like a password; the paste button saves typing a long key by hand
+            // Hidden like a password; the paste button saves typing a long key by hand, and marking it
+            // as a password lets a password manager fill it in (and offer to remember it on save)
             OutlinedTextField(
                 value = state.draft,
                 onValueChange = onDraft,
@@ -140,15 +148,26 @@ private fun ApiKey(
                         Icon(painterResource(R.drawable.ic_paste), stringResource(R.string.paste))
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentType = ContentType.Password },
             )
             Text(
                 stringResource(R.string.api_key_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            TextButton(onClick = { uriHandler.openUri(OPENAI_API_KEYS_URL) }) {
+                Text(stringResource(R.string.get_api_key))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = onSaveKey, enabled = state.draft.isNotBlank() && !state.checking) {
+                Button(
+                    onClick = {
+                        autofill?.commit()
+                        onSaveKey()
+                    },
+                    enabled = state.draft.isNotBlank() && !state.checking,
+                ) {
                     Text(stringResource(R.string.save))
                 }
                 if (state.savedKey != null) {
@@ -182,6 +201,8 @@ private fun ApiKey(
 private fun Checking(checking: Boolean) {
     if (checking) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
 }
+
+private const val OPENAI_API_KEYS_URL = "https://platform.openai.com/api-keys"
 
 private fun clipboardText(context: Context): String? =
     context.getSystemService(ClipboardManager::class.java)

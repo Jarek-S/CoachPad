@@ -133,7 +133,8 @@
     <string name="stt_title">Rozpoznawanie mowy (AI)</string>
     <string name="stt_description">Nagrania są wysyłane do OpenAI Whisper i zamieniane na tekst. Opłaty według zużycia na Twoim koncie OpenAI.</string>
     <string name="api_key_label">Klucz API OpenAI</string>
-    <string name="api_key_hint">Utworzysz go na platform.openai.com → API keys; skopiuj go i wklej tutaj.</string>
+    <string name="api_key_hint">Utwórz klucz na stronie OpenAI, skopiuj go i wklej tutaj — albo wypełnij z menedżera haseł.</string>
+    <string name="get_api_key">Zdobądź klucz w OpenAI</string>
     <string name="paste">Wklej</string>
     <string name="api_key_saved">Zapisany klucz: %s</string>
     <string name="check">Sprawdź</string>

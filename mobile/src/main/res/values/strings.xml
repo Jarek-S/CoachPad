@@ -135,7 +135,8 @@
     <string name="stt_title">Speech recognition (AI)</string>
     <string name="stt_description">Recordings are sent to OpenAI Whisper and turned into text. Billed by usage on your OpenAI account.</string>
     <string name="api_key_label">OpenAI API key</string>
-    <string name="api_key_hint">Create it at platform.openai.com → API keys, copy it and paste it here.</string>
+    <string name="api_key_hint">Create a key on the OpenAI site, copy it and paste it here — or fill it in from your password manager.</string>
+    <string name="get_api_key">Get a key at OpenAI</string>
     <string name="paste">Paste</string>
     <string name="api_key_saved">Saved key: %s</string>
     <string name="check">Check</string>
