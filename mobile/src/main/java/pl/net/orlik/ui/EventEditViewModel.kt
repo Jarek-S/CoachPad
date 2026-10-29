@@ -111,7 +111,7 @@ class EventEditViewModel(
             durationMillis = duration,
             playing = playingId == id,
             goalCandidates = if (event != null && team != null && draft.type == EventType.GOAL_DISALLOWED) {
-                goalCandidates(list, event.recordedAt, team).mapNotNull { rows[it.id] }
+                goalCandidates(list, event.id, team).mapNotNull { rows[it.id] }
             } else {
                 emptyList()
             },

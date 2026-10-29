@@ -7,20 +7,23 @@ import pl.net.orlik.shared.EventType
 
 // Linking a disallowed goal to the goal it cancels (design doc, section 8).
 
-/** Goals of [team] recorded before [recordedAt], in time order: what a disallowed goal can cancel. */
-fun goalCandidates(events: List<MatchEvent>, recordedAt: Long, team: Team): List<MatchEvent> =
-    events
-        .filter { it.isGoal && it.team == team && it.recordedAt < recordedAt }
-        .sortedBy { it.recordedAt }
+/**
+ * Goals of [team] before the event [beforeId] in the match, in match order: what a disallowed goal
+ * can cancel.
+ */
+fun goalCandidates(events: List<MatchEvent>, beforeId: String, team: Team): List<MatchEvent> =
+    timelineOf(events).events
+        .takeWhile { it.id != beforeId }
+        .filter { it.isGoal && it.team == team }
 
 /**
  * The goal a disallowed goal [disallowedId] of [team] cancels on its own: the last earlier goal of
  * the same team, skipping goals already cancelled by another disallowed goal. Null when there is
  * none ("nie znaleziono gola do powiązania").
  */
-fun goalToCancel(events: List<MatchEvent>, disallowedId: String, recordedAt: Long, team: Team): String? {
+fun goalToCancel(events: List<MatchEvent>, disallowedId: String, team: Team): String? {
     val taken = cancelledGoals(events.filter { it.id != disallowedId })
-    return goalCandidates(events, recordedAt, team).lastOrNull { it.id !in taken }?.id
+    return goalCandidates(events, disallowedId, team).lastOrNull { it.id !in taken }?.id
 }
 
 /**

@@ -83,4 +83,18 @@ class MatchCsvTest {
         assertEquals("ZolteLwy-Goscie_2026-10-11.json", exportFileName(export, "Żółte Lwy!", "Goście", "json", zone))
         assertEquals("match.csv", exportFileName(export.copy(startedAt = null, events = emptyList()), "", "", "csv", zone))
     }
+
+    @Test
+    fun typedEvents_haveOnlyWhatIsKnown() {
+        val typed = export.copy(
+            events = listOf(
+                ExportEvent("t1", EventType.GOAL, Team.HOME, null, play(22), note = null, minuteOnly = true),
+                ExportEvent("t2", EventType.NOTE, null, null, null, note = "z kartki"),
+            ),
+        )
+        val rows = matchCsvOf(typed, labels, zone).split("\r\n")
+
+        assertEquals("Orły – Rywale FC;2026-10-11;23';;;Gol;Orły;;;;tak", rows[1])
+        assertEquals("Orły – Rywale FC;2026-10-11;;;;Notatka;;;;z kartki;", rows[2])
+    }
 }

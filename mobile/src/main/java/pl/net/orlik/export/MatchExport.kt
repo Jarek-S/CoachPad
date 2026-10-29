@@ -7,7 +7,7 @@ import pl.net.orlik.data.Team
 import pl.net.orlik.review.cancelledGoals
 import pl.net.orlik.review.hasAssist
 import pl.net.orlik.review.hasPlayer
-import pl.net.orlik.review.playClockOf
+import pl.net.orlik.review.timelineOf
 import pl.net.orlik.shared.EventType
 
 // One model of an exported match, behind every export format: JSON, text and CSV (design doc,
@@ -21,10 +21,13 @@ data class ExportEvent(
     val type: EventType,
     /** Null for structural events and notes. */
     val team: Team?,
-    /** Epoch milliseconds, as recorded on the watch. */
-    val recordedAt: Long,
-    /** Time since MATCH_START minus pauses (design doc, section 8). */
-    val playTimeMillis: Long,
+    /** Epoch milliseconds, as recorded on the watch; null for an event typed in by hand. */
+    val recordedAt: Long?,
+    /**
+     * Time since MATCH_START minus pauses (design doc, section 8), or the start of the minute typed
+     * for an event added by hand; null when that has no minute.
+     */
+    val playTimeMillis: Long?,
     val note: String?,
     /** For a goal: the disallowed goal that cancels it, so it does not count. */
     val cancelledBy: String? = null,
@@ -34,6 +37,8 @@ data class ExportEvent(
     val player: String? = null,
     /** The assist of a goal. */
     val assist: String? = null,
+    /** Only the minute is known (typed by hand), not the exact play time. */
+    val minuteOnly: Boolean = false,
 ) {
     /** Only goals count towards the score, and only those not cancelled. */
     val counted: Boolean
@@ -45,7 +50,7 @@ data class MatchExport(
     /** Null until named in review; each format shows its default name then. */
     val homeTeam: String?,
     val awayTeam: String?,
-    /** MATCH_START; null when it was not synced. */
+    /** MATCH_START, else the date given for a match typed in from notes; null when neither is known. */
     val startedAt: Long?,
     /** MATCH_END; null when it was not synced. */
     val endedAt: Long?,
@@ -63,8 +68,8 @@ data class MatchExport(
  * its own.
  */
 fun matchExportOf(match: Match, events: List<MatchEvent>): MatchExport {
-    val sorted = events.filter { it.status != ReviewStatus.DELETED }.sortedBy { it.recordedAt }
-    val playTime = playClockOf(sorted)
+    val timeline = timelineOf(events)
+    val sorted = timeline.events
     val confirmed = sorted.filter { it.status == ReviewStatus.CONFIRMED && it.type != null }
     val cancelled = cancelledGoals(confirmed)
     val cancelledBy = confirmed
@@ -78,7 +83,8 @@ fun matchExportOf(match: Match, events: List<MatchEvent>): MatchExport {
             type = event.type!!,
             team = event.team,
             recordedAt = event.recordedAt,
-            playTimeMillis = playTime(event.recordedAt),
+            playTimeMillis = timeline.playTimeOf(event.id),
+            minuteOnly = event.recordedAt == null,
             note = event.rawTranscript?.trim()?.takeIf { it.isNotEmpty() },
             cancelledBy = cancelledBy[event.id],
             cancelsGoalId = event.linkedGoalEventId?.takeIf { event.type == EventType.GOAL_DISALLOWED && it in cancelled },
@@ -90,7 +96,7 @@ fun matchExportOf(match: Match, events: List<MatchEvent>): MatchExport {
         matchId = match.id,
         homeTeam = match.homeTeam,
         awayTeam = match.awayTeam,
-        startedAt = confirmed.firstOrNull { it.type == EventType.MATCH_START }?.recordedAt,
+        startedAt = confirmed.firstOrNull { it.type == EventType.MATCH_START }?.recordedAt ?: match.playedAt,
         endedAt = confirmed.lastOrNull { it.type == EventType.MATCH_END }?.recordedAt,
         score = Score(
             home = exported.count { it.counted && it.team == Team.HOME },

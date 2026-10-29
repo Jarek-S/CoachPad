@@ -64,6 +64,7 @@ import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.ReviewHint
 import pl.net.orlik.review.ReviewRow
 import pl.net.orlik.review.formatDuration
+import pl.net.orlik.review.formatEventTime
 import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.stt.SttError
@@ -375,7 +376,7 @@ private fun EventRow(
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(formatPlayTime(row.playTimeMillis), fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                Text(formatEventTime(row.playTimeMillis, row.minuteOnly), fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
                 row.type?.let { type ->
                     EventTypeMark(type)
                     val team = row.team?.let { teamName(it, home, away) }

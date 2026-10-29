@@ -116,4 +116,49 @@ class MatchReviewTest {
         assertEquals("0:06", formatDuration(5_600))
         assertEquals("1:05", formatDuration(65_000))
     }
+
+    /** An event typed in by hand on the phone: no time, maybe a minute (design doc, section 3.3). */
+    private fun typed(id: String, minute: Int?, type: EventType?, team: Team? = null, receivedAt: Long = 0) = MatchEvent(
+        id = id,
+        matchId = "m1",
+        recordedAt = null,
+        type = type,
+        audioFileRef = null,
+        receivedAt = receivedAt,
+        team = team,
+        minute = minute,
+        status = ReviewStatus.CONFIRMED,
+    )
+
+    @Test
+    fun typedEvents_sitAtTheirMinute_withoutMinuteAtTheEndInTypedOrder() {
+        val review = matchReviewOf(
+            listOf(
+                typed("noMinute2", null, EventType.NOTE, receivedAt = 2),
+                event("start", min(0), EventType.MATCH_START),
+                typed("noMinute1", null, EventType.NOTE, receivedAt = 1),
+                typed("at23", 23, EventType.GOAL, Team.AWAY),
+                event("goal", min(30) + 5_000, EventType.GOAL, Team.HOME, status = ReviewStatus.CONFIRMED),
+                event("at22", min(22), EventType.YELLOW_CARD, Team.HOME, status = ReviewStatus.CONFIRMED),
+            ),
+        )
+        assertEquals(listOf("start", "at22", "at23", "goal", "noMinute1", "noMinute2"), review.confirmed.map { it.eventId })
+        val at23 = review.confirmed.single { it.eventId == "at23" }
+        assertEquals(min(22), at23.playTimeMillis)
+        assertEquals(true, at23.minuteOnly)
+        assertNull(review.confirmed.single { it.eventId == "noMinute1" }.playTimeMillis)
+    }
+
+    @Test
+    fun matchFromNotes_hasOnlyTypedEvents() {
+        val review = matchReviewOf(listOf(typed("b", 40, EventType.GOAL, Team.HOME), typed("a", 5, EventType.GOAL, Team.AWAY)))
+        assertEquals(listOf("a", "b"), review.confirmed.map { it.eventId })
+    }
+
+    @Test
+    fun eventTime_showsMinuteOnlyForTypedEvents() {
+        assertEquals("41:02", formatEventTime(min(41) + 2_000, minuteOnly = false))
+        assertEquals("23'", formatEventTime(minuteStartMillis(23), minuteOnly = true))
+        assertEquals("–", formatEventTime(null, minuteOnly = true))
+    }
 }

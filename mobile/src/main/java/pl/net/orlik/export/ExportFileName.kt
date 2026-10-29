@@ -13,7 +13,7 @@ private val DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd")
  * [homeTeam] / [awayTeam] are the names as shown (the default ones while not set).
  */
 fun exportFileName(export: MatchExport, homeTeam: String, awayTeam: String, extension: String, zone: ZoneId): String {
-    val date = (export.startedAt ?: export.events.firstOrNull()?.recordedAt)
+    val date = (export.startedAt ?: export.events.firstNotNullOfOrNull { it.recordedAt })
         ?.let { DATE.format(Instant.ofEpochMilli(it).atZone(zone)) }
     val teams = listOf(homeTeam, awayTeam).map(::fileNamePart).filter { it.isNotEmpty() }.joinToString("-")
     return listOf(teams, date).filter { !it.isNullOrEmpty() }.joinToString("_").ifEmpty { "match" } + ".$extension"

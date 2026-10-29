@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import java.io.File
 
-@Database(entities = [MatchEvent::class, Match::class, LineupPlayer::class], version = 6)
+@Database(entities = [MatchEvent::class, Match::class, LineupPlayer::class], version = 7)
 abstract class PhoneDatabase : RoomDatabase() {
 
     abstract fun matchEventDao(): MatchEventDao
@@ -28,7 +28,7 @@ abstract class PhoneDatabase : RoomDatabase() {
                     context.applicationContext,
                     PhoneDatabase::class.java,
                     "match_notes.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build().also { instance = it }
             }
     }
 }
@@ -81,6 +81,32 @@ internal val MIGRATION_4_5 = object : Migration(4, 5) {
 internal val MIGRATION_5_6 = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE matches ADD COLUMN planned_at INTEGER")
+    }
+}
+
+/**
+ * Version 7 lets the phone record without the watch (design doc, section 3.3): an event typed in by
+ * hand has no time but may have a minute, and a match typed in from notes has a date. SQLite cannot
+ * make a column nullable in place, so the events table is copied into a new one.
+ */
+internal val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE events_new (id TEXT NOT NULL, match_id TEXT NOT NULL, recorded_at INTEGER, type TEXT, " +
+                "audio_file_ref TEXT, received_at INTEGER NOT NULL, team TEXT, raw_transcript TEXT, " +
+                "status TEXT NOT NULL DEFAULT 'TO_REVIEW', linked_goal_event_id TEXT, player_name TEXT, " +
+                "assist_name TEXT, transcript TEXT, minute INTEGER, PRIMARY KEY(id))",
+        )
+        db.execSQL(
+            "INSERT INTO events_new (id, match_id, recorded_at, type, audio_file_ref, received_at, team, " +
+                "raw_transcript, status, linked_goal_event_id, player_name, assist_name, transcript) " +
+                "SELECT id, match_id, recorded_at, type, audio_file_ref, received_at, team, raw_transcript, " +
+                "status, linked_goal_event_id, player_name, assist_name, transcript FROM events",
+        )
+        db.execSQL("DROP TABLE events")
+        db.execSQL("ALTER TABLE events_new RENAME TO events")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_events_match_id ON events (match_id)")
+        db.execSQL("ALTER TABLE matches ADD COLUMN played_at INTEGER")
     }
 }
 

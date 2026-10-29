@@ -21,8 +21,11 @@ enum class ReviewHint {
 
 data class ReviewRow(
     val eventId: String,
-    /** Play time at the event: time since MATCH_START minus pauses (design doc, section 8). */
-    val playTimeMillis: Long,
+    /**
+     * Play time at the event: time since MATCH_START minus pauses (design doc, section 8), or the
+     * start of the minute typed for an event added by hand; null when that has no minute.
+     */
+    val playTimeMillis: Long?,
     val type: EventType?,
     val team: Team?,
     val note: String?,
@@ -37,6 +40,8 @@ data class ReviewRow(
     val assist: String? = null,
     /** What speech-to-text heard; null when not recognised or nothing was heard. */
     val transcript: String? = null,
+    /** Only the minute is known (typed by hand), not the exact play time. */
+    val minuteOnly: Boolean = false,
 )
 
 data class MatchReview(
@@ -44,17 +49,16 @@ data class MatchReview(
     val confirmed: List<ReviewRow>,
 )
 
-/** Splits a match's events into the two review sections, each in time order. */
+/** Splits a match's events into the two review sections, each in match order. */
 fun matchReviewOf(events: List<MatchEvent>): MatchReview {
-    val sorted = events.filter { it.status != ReviewStatus.DELETED }.sortedBy { it.recordedAt }
-    val playTime = playClockOf(sorted)
-    val cancelled = cancelledGoals(sorted)
-    val byId = sorted.associateBy { it.id }
-    val rows = sorted.map { event ->
+    val timeline = timelineOf(events)
+    val cancelled = cancelledGoals(timeline.events)
+    val rows = timeline.events.map { event ->
         val cancelledGoal = event.linkedGoalEventId?.takeIf { event.type == EventType.GOAL_DISALLOWED && it in cancelled }
         event.status to ReviewRow(
             eventId = event.id,
-            playTimeMillis = playTime(event.recordedAt),
+            playTimeMillis = timeline.playTimeOf(event.id),
+            minuteOnly = event.recordedAt == null,
             type = event.type,
             team = event.team,
             note = event.rawTranscript?.takeIf { it.isNotBlank() },
@@ -64,7 +68,7 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
             audioFileRef = event.audioFileRef,
             hint = hintOf(event, linked = cancelledGoal != null),
             cancelled = event.id in cancelled,
-            cancelsGoalAt = cancelledGoal?.let { playTime(byId.getValue(it).recordedAt) },
+            cancelsGoalAt = cancelledGoal?.let { timeline.playTimeOf(it) },
         )
     }
     return MatchReview(
@@ -74,13 +78,45 @@ fun matchReviewOf(events: List<MatchEvent>): MatchReview {
 }
 
 /**
- * Play time at a moment of the match whose not deleted events are [sorted] by time: since
- * MATCH_START minus pauses. Without MATCH_START (not synced yet) it counts from the oldest event
- * the phone has.
+ * A match's not deleted events in match order, with the play time of each (design doc, sections
+ * 3.3 and 8). Events with a time come in time order; an event typed in by hand sits at the start of
+ * its minute, after the timed ones of that moment, and one without a minute at the end, in the order
+ * typed in.
  */
-fun playClockOf(sorted: List<MatchEvent>): (Long) -> Long {
-    val start = (sorted.firstOrNull { it.type == EventType.MATCH_START } ?: sorted.firstOrNull())?.recordedAt ?: 0
-    val pauses = pausesFrom(sorted, type = { it.type }, at = { it.recordedAt })
+class Timeline(val events: List<MatchEvent>, private val playTimes: Map<String, Long?>) {
+    /** Null for an event typed in by hand without a minute. */
+    fun playTimeOf(eventId: String): Long? = playTimes[eventId]
+}
+
+fun timelineOf(events: List<MatchEvent>): Timeline {
+    val kept = events.filter { it.status != ReviewStatus.DELETED }
+    val clock = playClockOf(kept.mapNotNull { it.recordedAt?.let { at -> it.type to at } }.sortedBy { it.second })
+    val playTimes = kept.associate { event ->
+        event.id to (event.recordedAt?.let(clock) ?: event.minute?.let { minuteStartMillis(it) })
+    }
+    val sorted = kept.sortedWith(
+        compareBy<MatchEvent>(
+            { playTimes[it.id] == null },
+            { playTimes[it.id] },
+            { it.recordedAt == null },
+            { it.recordedAt },
+            { it.receivedAt },
+        ),
+    )
+    return Timeline(sorted, playTimes)
+}
+
+/** Play time at the start of a football minute: 23' begins at 22:00. */
+fun minuteStartMillis(minute: Int): Long = (minute - 1).coerceAtLeast(0) * 60_000L
+
+/**
+ * Play time at a moment of the match, from its timed events ([timed]: type and time, in time
+ * order): since MATCH_START minus pauses. Without MATCH_START (not synced yet) it counts from the
+ * oldest event the phone has.
+ */
+private fun playClockOf(timed: List<Pair<EventType?, Long>>): (Long) -> Long {
+    val start = (timed.firstOrNull { it.first == EventType.MATCH_START } ?: timed.firstOrNull())?.second ?: 0
+    val pauses = pausesFrom(timed, type = { it.first }, at = { it.second })
     return { at -> playTimeMillis(at, start, pauses) }
 }
 
@@ -120,6 +156,16 @@ fun playersText(player: String?, assist: String?, withAssist: String, assistOnly
 
 /** A team name as typed: trimmed, and null when left empty (the default name shows then). */
 fun teamNameOf(typed: String): String? = typed.trim().replace(Regex("\\s+"), " ").takeIf { it.isNotEmpty() }
+
+/**
+ * When an event happened, as shown in review: the play time "41:02", only the football minute
+ * "23'" for an event typed in by hand, or "–" when that has no minute.
+ */
+fun formatEventTime(millis: Long?, minuteOnly: Boolean): String = when {
+    millis == null -> "–"
+    minuteOnly -> "${millis / 60_000 + 1}'"
+    else -> formatPlayTime(millis)
+}
 
 /** Play time as minutes:seconds, e.g. "41:02"; minutes keep counting past 59. */
 fun formatPlayTime(millis: Long): String {

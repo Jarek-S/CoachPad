@@ -51,7 +51,7 @@ private fun eventJsonOf(event: ExportEvent, zone: ZoneId): JsonObject = buildJso
     put("type", event.type.name)
     event.team?.let { put("team", it.name) }
     putTime("recordedAt", event.recordedAt, zone)
-    put("playTimeSeconds", event.playTimeMillis / 1_000)
+    event.playTimeMillis?.let { put("playTimeSeconds", it / 1_000) }
     // As names only until team rosters (phase 5) add the number on the platform's list
     event.player?.let { put("player", buildJsonObject { put("name", it) }) }
     event.assist?.let { put("assist", buildJsonObject { put("name", it) }) }

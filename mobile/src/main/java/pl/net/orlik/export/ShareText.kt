@@ -70,7 +70,7 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
     val home = export.homeTeam ?: labels.homeTeam
     val away = export.awayTeam ?: labels.awayTeam
     val byId = export.events.associateBy { it.id }
-    val date = (export.startedAt ?: export.events.firstOrNull()?.recordedAt)?.let {
+    val date = (export.startedAt ?: export.events.firstNotNullOfOrNull { it.recordedAt })?.let {
         DateTimeFormatter.ofPattern(labels.datePattern, labels.locale).format(Instant.ofEpochMilli(it).atZone(zone))
     }
 
@@ -92,9 +92,9 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
             event.type.takeIf { it == EventType.GOAL_DISALLOWED }?.let { labels.disallowedGoal },
             playersText(event.player, event.assist, labels.playerWithAssist, labels.assistOnly),
             event.note,
-            event.cancelledBy?.let { byId[it] }?.let { labels.notCounted.format(footballMinute(it.playTimeMillis)) },
+            event.cancelledBy?.let { byId[it] }?.let { goal -> footballMinute(goal.playTimeMillis)?.let(labels.notCounted::format) },
         )
-        listOfNotNull("${footballMinute(event.playTimeMillis)} $mark", team).joinToString(" ") +
+        listOfNotNull(footballMinute(event.playTimeMillis), mark, team).joinToString(" ") +
             details.joinToString("") { " – $it" }
     }
 
@@ -121,5 +121,5 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
     }
 }
 
-/** The football convention: the minute being played, so 12:34 of play time is "13'". */
-fun footballMinute(playTimeMillis: Long): String = "${playTimeMillis / 60_000 + 1}'"
+/** The football convention: the minute being played, so 12:34 of play time is "13'"; null without a time. */
+fun footballMinute(playTimeMillis: Long?): String? = playTimeMillis?.let { "${it / 60_000 + 1}'" }

@@ -69,7 +69,7 @@ fun draftOf(event: MatchEvent): EventDraft =
 fun relinked(draft: EventDraft, event: MatchEvent, events: List<MatchEvent>): EventDraft {
     val team = draft.team
     val link = if (draft.type == EventType.GOAL_DISALLOWED && team != null) {
-        goalToCancel(events, event.id, event.recordedAt, team)
+        goalToCancel(events, event.id, team)
     } else {
         null
     }

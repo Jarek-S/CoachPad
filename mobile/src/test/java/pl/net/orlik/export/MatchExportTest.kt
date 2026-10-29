@@ -83,7 +83,7 @@ class MatchExportTest {
 
         assertNull(export.startedAt)
         assertNull(export.endedAt)
-        assertEquals(0, export.events.single().playTimeMillis)
+        assertEquals(0L, export.events.single().playTimeMillis)
     }
 
     @Test
@@ -157,5 +157,25 @@ class MatchExportTest {
         assertNull(export.homeTeam)
         assertNull(export.awayTeam)
         assertEquals(Score(0, 0), export.score)
+    }
+
+    @Test
+    fun matchFromNotes_startsAtItsDate_typedEventsKeepOnlyTheirMinute() {
+        val notes = match.copy(playedAt = kickOff)
+        val export = matchExportOf(
+            notes,
+            listOf(
+                MatchEvent("g", "m1", null, EventType.GOAL, null, 0, team = Team.HOME, minute = 23, status = ReviewStatus.CONFIRMED),
+                MatchEvent("n", "m1", null, EventType.GOAL, null, 1, team = Team.AWAY, status = ReviewStatus.CONFIRMED),
+            ),
+        )
+        assertEquals(kickOff, export.startedAt)
+        assertEquals(1, export.score.home)
+        assertEquals(1, export.score.away)
+        val goal = export.events.first()
+        assertNull(goal.recordedAt)
+        assertEquals(22 * 60_000L, goal.playTimeMillis)
+        assertTrue(goal.minuteOnly)
+        assertNull(export.events.last().playTimeMillis)
     }
 }

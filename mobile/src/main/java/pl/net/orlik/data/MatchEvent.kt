@@ -42,9 +42,12 @@ data class MatchEvent(
     @ColumnInfo(name = "match_id")
     val matchId: String,
 
-    /** Epoch milliseconds, as recorded on the watch. */
+    /**
+     * Epoch milliseconds, as recorded on the watch (or on the phone during a match); null for an
+     * event typed in by hand afterwards (design doc, section 3.3).
+     */
     @ColumnInfo(name = "recorded_at")
-    val recordedAt: Long,
+    val recordedAt: Long?,
 
     /** Structural MATCH_* type, the type set in review, or null for a recording not described yet. */
     val type: EventType?,
@@ -81,6 +84,9 @@ data class MatchEvent(
 
     /** What speech-to-text heard in the recording; null until recognised ("" when it heard nothing). */
     val transcript: String? = null,
+
+    /** The football minute typed for an event added by hand (23 for 23'); null when not given. */
+    val minute: Int? = null,
 )
 
 /** Structural events need no review; everything else waits under "Do przejrzenia". */
@@ -105,6 +111,10 @@ data class Match(
     /** Epoch milliseconds when the match was planned on the phone; null for a match from the watch. */
     @ColumnInfo(name = "planned_at")
     val plannedAt: Long? = null,
+
+    /** When a match typed in from notes was played, as given; null for a recorded match. */
+    @ColumnInfo(name = "played_at")
+    val playedAt: Long? = null,
 )
 
 /**
@@ -123,7 +133,10 @@ data class MatchListItem(
     val matchId: String,
     val homeTeam: String?,
     val awayTeam: String?,
-    /** Time of the match's first event (MATCH_START when it was synced); null for a planned match. */
+    /**
+     * Time of the match's first event (MATCH_START when it was synced), else the date given for a
+     * match typed in from notes; null for a planned match.
+     */
     val startedAt: Long?,
     val toReview: Int,
     val recordings: Int,
@@ -202,7 +215,7 @@ interface MatchEventDao {
         """
         SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals FROM (
             SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
-                (SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id) AS startedAt,
+                COALESCE((SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id), m.played_at) AS startedAt,
                 (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
                 (SELECT COUNT(*) FROM events e
                     WHERE e.match_id = m.id AND e.audio_file_ref IS NOT NULL AND e.status != 'DELETED') AS recordings,

@@ -43,13 +43,15 @@ fun matchCsvOf(export: MatchExport, labels: CsvLabels, zone: ZoneId): String {
     val match = "$home – $away"
 
     val rows = export.events.map { event ->
-        val time = Instant.ofEpochMilli(event.recordedAt).atZone(zone)
+        // An event typed in by hand has no clock time, maybe not even a minute: those cells stay empty
+        val time = event.recordedAt?.let { Instant.ofEpochMilli(it).atZone(zone) }
+        val date = time ?: export.startedAt?.let { Instant.ofEpochMilli(it).atZone(zone) }
         listOf(
             match,
-            DATE.format(time),
-            footballMinute(event.playTimeMillis),
-            formatPlayTime(event.playTimeMillis),
-            TIME.format(time),
+            date?.let(DATE::format).orEmpty(),
+            footballMinute(event.playTimeMillis).orEmpty(),
+            event.playTimeMillis?.takeUnless { event.minuteOnly }?.let(::formatPlayTime).orEmpty(),
+            time?.let(TIME::format).orEmpty(),
             labels.typeNames.getValue(event.type),
             when (event.team) {
                 Team.HOME -> home

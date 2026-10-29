@@ -38,12 +38,12 @@ class LineupViewModel(
 
     val state: StateFlow<LineupUiState> = combine(
         events.match(matchId),
-        events.eventsOf(matchId).map { list -> list.minOfOrNull { it.recordedAt } },
+        events.eventsOf(matchId).map { list -> list.mapNotNull { it.recordedAt }.minOrNull() },
         lineup.lineupOf(matchId),
     ) { match, startedAt, players ->
         LineupUiState(
             match = match,
-            startedAt = startedAt,
+            startedAt = startedAt ?: match?.playedAt,
             players = players.sortedWith(lineupOrder).groupBy { it.team },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LineupUiState())

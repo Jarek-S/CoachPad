@@ -29,9 +29,9 @@ class GoalLinkTest {
     @Test
     fun cancels_lastEarlierGoalOfTheSameTeam() {
         val events = listOf(homeGoal, awayGoal, event("away2", 35, EventType.GOAL, Team.AWAY), disallowed)
-        assertEquals("away2", goalToCancel(events, "dis", disallowed.recordedAt, Team.AWAY))
+        assertEquals("away2", goalToCancel(events, "dis", Team.AWAY))
         // The other team's goal is never cancelled
-        assertNull(goalToCancel(listOf(homeGoal, disallowed), "dis", disallowed.recordedAt, Team.AWAY))
+        assertNull(goalToCancel(listOf(homeGoal, disallowed), "dis", Team.AWAY))
     }
 
     @Test
@@ -41,16 +41,16 @@ class GoalLinkTest {
             disallowed,
             event("later", 50, EventType.GOAL, Team.AWAY),
         )
-        assertNull(goalToCancel(events, "dis", disallowed.recordedAt, Team.AWAY))
+        assertNull(goalToCancel(events, "dis", Team.AWAY))
     }
 
     @Test
     fun goalAlreadyCancelled_isSkipped() {
         val first = event("dis1", 32, EventType.GOAL_DISALLOWED, Team.AWAY, link = "away2")
         val events = listOf(awayGoal, event("away2", 31, EventType.GOAL, Team.AWAY), first, disallowed)
-        assertEquals("away", goalToCancel(events, "dis", disallowed.recordedAt, Team.AWAY))
+        assertEquals("away", goalToCancel(events, "dis", Team.AWAY))
         // Its own earlier link does not count as taken
-        assertEquals("away2", goalToCancel(events, "dis1", first.recordedAt, Team.AWAY))
+        assertEquals("away2", goalToCancel(events, "dis1", Team.AWAY))
     }
 
     @Test
@@ -94,5 +94,18 @@ class GoalLinkTest {
         val events = listOf(awayGoal.copy(type = EventType.NOTE), disallowed.copy(linkedGoalEventId = "away"))
         assertEquals(emptySet<String>(), cancelledGoals(events))
         assertEquals(ReviewHint.NO_GOAL, matchReviewOf(events).toReview.single { it.eventId == "dis" }.hint)
+    }
+
+    @Test
+    fun typedEvents_linkInMatchOrder() {
+        fun typed(id: String, minute: Int?, type: EventType) =
+            MatchEvent(id, "m1", null, type, null, 0, team = Team.AWAY, minute = minute, status = ReviewStatus.CONFIRMED)
+        // A goal typed at 38' comes before a disallowed goal recorded at 41:00; one without a minute after it
+        val start = event("start", 0, EventType.MATCH_START)
+        val events = listOf(start, typed("typed38", 38, EventType.GOAL), disallowed, typed("noMinute", null, EventType.GOAL))
+        assertEquals("typed38", goalToCancel(events, "dis", Team.AWAY))
+        // A disallowed goal without a minute comes last, after every goal
+        val typedDisallowed = typed("typedDis", null, EventType.GOAL_DISALLOWED)
+        assertEquals("away", goalToCancel(listOf(awayGoal, typedDisallowed), "typedDis", Team.AWAY))
     }
 }

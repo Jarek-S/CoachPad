@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.net.orlik.data.Team
 import pl.net.orlik.shared.EventType
@@ -189,5 +190,15 @@ class ShareTextTest {
         assertEquals("1'", footballMinute(play(0, 59)))
         assertEquals("2'", footballMinute(play(1)))
         assertEquals("13'", footballMinute(play(12, 34)))
+    }
+
+    @Test
+    fun typedGoalWithoutMinute_hasNoMinute() {
+        val typed = export.copy(
+            events = listOf(ExportEvent("t", EventType.GOAL, Team.HOME, null, null, note = null)),
+            score = Score(1, 0),
+        )
+
+        assertTrue(shareTextOf(typed, polish, zone).endsWith("\n\n⚽ Orły"))
     }
 }

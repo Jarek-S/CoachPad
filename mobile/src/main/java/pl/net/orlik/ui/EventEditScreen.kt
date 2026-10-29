@@ -87,7 +87,7 @@ import pl.net.orlik.review.ReviewPosition
 import pl.net.orlik.review.ReviewRow
 import pl.net.orlik.review.editableTypes
 import pl.net.orlik.review.formatDuration
-import pl.net.orlik.review.formatPlayTime
+import pl.net.orlik.review.formatEventTime
 import pl.net.orlik.review.needsTeam
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.ui.theme.GlassBorder
@@ -171,7 +171,7 @@ fun EventEditScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column {
-                Text(formatPlayTime(row.playTimeMillis), fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = OnStadium)
+                Text(formatEventTime(row.playTimeMillis, row.minuteOnly), fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = OnStadium)
                 state.recordedAt?.let {
                     Text(
                         stringResource(R.string.play_minute_recorded, clockFormat.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))),
@@ -311,7 +311,7 @@ private fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun goalLabel(goal: ReviewRow, match: Match?): String {
     val parts = listOfNotNull(
-        formatPlayTime(goal.playTimeMillis),
+        formatEventTime(goal.playTimeMillis, goal.minuteOnly),
         eventTypeName(EventType.GOAL),
         goal.team?.let { teamName(it, match?.homeTeam, match?.awayTeam) },
         playersText(goal.player, goal.assist) ?: goal.note,

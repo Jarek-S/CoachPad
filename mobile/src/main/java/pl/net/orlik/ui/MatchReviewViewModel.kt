@@ -112,7 +112,7 @@ class MatchReviewViewModel(
     ) { match, list, durations, playingId, (stt, planned) ->
         MatchReviewUiState(
             match = match,
-            startedAt = list.minOfOrNull { it.recordedAt },
+            startedAt = list.mapNotNull { it.recordedAt }.minOrNull() ?: match?.playedAt,
             review = matchReviewOf(list),
             durations = durations,
             playingId = playingId,

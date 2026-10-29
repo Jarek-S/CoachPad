@@ -75,4 +75,23 @@ class PlatformJsonTest {
     fun polishLettersStayReadable() {
         assertFalse(platformJsonOf(export, zone).contains("\\u"))
     }
+
+    @Test
+    fun typedEvents_leaveOutWhatIsNotKnown() {
+        val typed = export.copy(
+            events = listOf(
+                ExportEvent("t1", EventType.GOAL, Team.HOME, null, 22 * 60_000L, note = null, minuteOnly = true),
+                ExportEvent("t2", EventType.NOTE, null, null, null, note = "z kartki"),
+            ),
+        )
+        val events = platformJsonObjectOf(typed, zone).getValue("match").jsonObject.getValue("events").toString()
+
+        assertEquals(
+            Json.parseToJsonElement(
+                """[{"id":"t1","type":"GOAL","team":"HOME","playTimeSeconds":1320,"counted":true},""" +
+                    """{"id":"t2","type":"NOTE","note":"z kartki"}]""",
+            ),
+            Json.parseToJsonElement(events),
+        )
+    }
 }
