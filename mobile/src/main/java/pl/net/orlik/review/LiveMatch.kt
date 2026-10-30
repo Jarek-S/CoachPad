@@ -1,6 +1,7 @@
 package pl.net.orlik.review
 
 import pl.net.orlik.data.MatchEvent
+import pl.net.orlik.data.Team
 import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.shared.Pause
@@ -56,3 +57,19 @@ fun liveEventFor(match: LiveMatch, action: LiveAction): EventType? = when (actio
 }
 
 enum class LiveAction { START, PAUSE, RESUME, END }
+
+/** The quick buttons of the match screen (design doc, section 3.3). */
+enum class QuickEvent(val type: EventType, val team: Team?) {
+    HOME_GOAL(EventType.GOAL, Team.HOME),
+    AWAY_GOAL(EventType.GOAL, Team.AWAY),
+    CARD(EventType.YELLOW_CARD, null),
+    NOTE(EventType.NOTE, null),
+}
+
+/**
+ * Whether an event from a quick button is complete enough to count at once: a goal is (it knows its
+ * team), a card once its team is chosen, a note once something is written. Otherwise it waits under
+ * "Do przejrzenia".
+ */
+fun quickConfirms(draft: EventDraft): Boolean =
+    draft.canConfirm && (draft.type != EventType.NOTE || draft.storedNote != null)

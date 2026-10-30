@@ -212,4 +212,13 @@
     <string name="end_match">End match</string>
     <string name="end_match_hint">Hold “End match” to end it</string>
     <string name="other_match_live">Another match is live on the phone: end it first</string>
+    <string name="quick_goal">Goal · %s</string>
+    <string name="quick_card">Card</string>
+    <string name="done">Done</string>
+    <string name="start_mic">Record</string>
+    <string name="stop_mic">Stop recording</string>
+    <string name="recording_for">Recording · %s</string>
+    <string name="mic_hint">Tap to record what happened</string>
+    <string name="mic_denied">The microphone is not allowed: allow it in the app settings</string>
+    <string name="mic_failed">The microphone could not be opened</string>
 </resources>

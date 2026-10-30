@@ -1,10 +1,13 @@
 package pl.net.orlik.review
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.ReviewStatus
+import pl.net.orlik.data.Team
 import pl.net.orlik.shared.EventType
 
 class LiveMatchTest {
@@ -61,5 +64,14 @@ class LiveMatchTest {
         assertEquals(EventType.MATCH_END, liveEventFor(paused, LiveAction.END))
         assertNull(liveEventFor(ended, LiveAction.END))
         assertNull(liveEventFor(notStarted, LiveAction.END))
+    }
+
+    @Test
+    fun quickEvents_confirmOnceComplete() {
+        assertTrue(quickConfirms(EventDraft(EventType.GOAL, Team.HOME)))
+        assertFalse(quickConfirms(EventDraft(EventType.YELLOW_CARD)))
+        assertTrue(quickConfirms(EventDraft(EventType.RED_CARD, Team.AWAY)))
+        assertFalse(quickConfirms(EventDraft(EventType.NOTE, note = " ")))
+        assertTrue(quickConfirms(EventDraft(EventType.NOTE, note = "Zmiana")))
     }
 }

@@ -215,6 +215,16 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
+                                onQuick = viewModel::quick,
+                                onToggleRecording = viewModel::toggleRecording,
+                                onStopRecording = viewModel::stopRecording,
+                                onType = viewModel::setType,
+                                onTeam = viewModel::setTeam,
+                                onPlayer = viewModel::setPlayer,
+                                onAssist = viewModel::setAssist,
+                                onNote = viewModel::setNote,
+                                onDeleteQuick = viewModel::deleteQuick,
+                                onCloseSheet = viewModel::closeSheet,
                             )
                         }
                         // An event to edit, or without one "Dodaj zdarzenie"

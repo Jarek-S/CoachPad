@@ -223,4 +223,13 @@
     <string name="end_match">Koniec meczu</string>
     <string name="end_match_hint">Przytrzymaj „Koniec meczu”, aby zakończyć</string>
     <string name="other_match_live">Na telefonie trwa inny mecz — najpierw go zakończ</string>
+    <string name="quick_goal">Gol · %s</string>
+    <string name="quick_card">Kartka</string>
+    <string name="done">Gotowe</string>
+    <string name="start_mic">Nagraj</string>
+    <string name="stop_mic">Zakończ nagranie</string>
+    <string name="recording_for">Nagrywanie · %s</string>
+    <string name="mic_hint">Dotknij, aby nagrać, co się stało</string>
+    <string name="mic_denied">Brak dostępu do mikrofonu — zezwól w ustawieniach aplikacji</string>
+    <string name="mic_failed">Nie udało się włączyć mikrofonu</string>
 </resources>
