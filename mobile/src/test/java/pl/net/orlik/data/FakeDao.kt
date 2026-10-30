@@ -45,6 +45,8 @@ class FakeDao : MatchEventDao {
 
     override fun match(matchId: String): Flow<Match?> = flowOf(matches.firstOrNull { it.id == matchId })
 
+    override fun liveMatchId(): Flow<String?> = flowOf(null)
+
     override fun matches(): Flow<List<MatchListItem>> = flowOf(emptyList())
 
     override suspend fun event(id: String) = events.firstOrNull { it.id == id }

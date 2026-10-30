@@ -20,6 +20,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.SelectableDates
@@ -62,7 +64,9 @@ import pl.net.orlik.review.parsePlayerEntry
 import pl.net.orlik.review.playerEntryText
 import pl.net.orlik.review.todayUtcMillis
 import java.time.ZoneId
+import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
+import pl.net.orlik.ui.theme.OnStadiumHint
 import pl.net.orlik.ui.theme.Green
 import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.Ink
@@ -84,6 +88,7 @@ fun LineupScreen(
     onUpdatePlayer: (id: Long, PlayerEntry) -> Unit,
     onRemovePlayer: (id: Long) -> Unit,
     onEnterFromNotes: (utcDayMillis: Long) -> Unit,
+    onStartMatch: () -> Unit,
 ) {
     var choosingDate by rememberSaveable { mutableStateOf(false) }
     if (choosingDate) {
@@ -133,8 +138,32 @@ fun LineupScreen(
             val match = state.match
             if (match != null && match.plannedAt != null && match.playedAt == null && state.startedAt == null) {
                 GlassPanel(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()) {
-                    Button(onClick = { choosingDate = true }, modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                        Text(stringResource(R.string.enter_from_notes))
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // One live match on the phone at a time
+                        if (state.otherMatchLive) {
+                            Text(stringResource(R.string.other_match_live), style = MaterialTheme.typography.bodyMedium, color = OnStadiumHint)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(
+                                onClick = { choosingDate = true },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                                border = BorderStroke(1.dp, GlassBorder),
+                            ) {
+                                Text(stringResource(R.string.enter_from_notes))
+                            }
+                            Button(
+                                onClick = onStartMatch,
+                                enabled = !state.otherMatchLive,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    disabledContainerColor = OnStadium.copy(alpha = 0.12f),
+                                    disabledContentColor = OnStadium.copy(alpha = 0.5f),
+                                ),
+                            ) {
+                                Text(stringResource(R.string.start_match))
+                            }
+                        }
                     }
                 }
             }
@@ -384,6 +413,7 @@ private fun LineupScreenPreview() {
             onUpdatePlayer = { _, _ -> },
             onRemovePlayer = {},
             onEnterFromNotes = {},
+            onStartMatch = {},
         )
     }
 }

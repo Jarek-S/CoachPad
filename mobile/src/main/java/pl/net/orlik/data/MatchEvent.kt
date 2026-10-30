@@ -128,6 +128,17 @@ private const val COUNTED_GOAL = """
     )
 """
 
+/**
+ * The match recorded live on the phone and not ended: one planned on the phone (a watch match never
+ * is) with MATCH_START and no MATCH_END. One at a time (design doc, section 3.3).
+ */
+private const val LIVE_MATCH = """
+    SELECT l.id FROM matches l WHERE l.planned_at IS NOT NULL
+        AND EXISTS (SELECT 1 FROM events s WHERE s.match_id = l.id AND s.type = 'MATCH_START')
+        AND NOT EXISTS (SELECT 1 FROM events e WHERE e.match_id = l.id AND e.type = 'MATCH_END')
+    LIMIT 1
+"""
+
 /** One row of the match list. */
 data class MatchListItem(
     val matchId: String,
@@ -147,6 +158,8 @@ data class MatchListItem(
     val awayGoals: Int = 0,
     /** Typed in from notes: [startedAt] is the date it was played, without a time. */
     val fromNotes: Boolean = false,
+    /** Recorded live on the phone and not ended yet: it opens on the match screen. */
+    val live: Boolean = false,
 ) {
     /** Planned on the phone, nothing from the watch yet. */
     val isPlanned: Boolean get() = startedAt == null
@@ -215,12 +228,17 @@ interface MatchEventDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     fun match(matchId: String): Flow<Match?>
 
+    /** The match recorded live on the phone right now; null when none. */
+    @Query(LIVE_MATCH)
+    fun liveMatchId(): Flow<String?>
+
     /** Matches on the phone: planned ones first, then newest first. */
     @Query(
         """
-        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals, fromNotes FROM (
+        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals, fromNotes, live FROM (
             SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
                 m.played_at IS NOT NULL AS fromNotes,
+                COALESCE(m.id = ($LIVE_MATCH), 0) AS live,
                 COALESCE((SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id), m.played_at) AS startedAt,
                 (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
                 (SELECT COUNT(*) FROM events e

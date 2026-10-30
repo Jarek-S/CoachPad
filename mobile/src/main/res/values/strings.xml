@@ -204,4 +204,12 @@
     <string name="match_day_format">EEEE, d MMMM</string>
     <string name="enter_from_notes">Enter from notes</string>
     <string name="played_on">Played on</string>
+    <string name="start_match">Start match</string>
+    <string name="live_match">Live</string>
+    <string name="live_paused">Paused</string>
+    <string name="pause_match">Pause</string>
+    <string name="resume_match">Resume</string>
+    <string name="end_match">End match</string>
+    <string name="end_match_hint">Hold “End match” to end it</string>
+    <string name="other_match_live">Another match is live on the phone: end it first</string>
 </resources>

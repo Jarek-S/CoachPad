@@ -68,6 +68,7 @@ import pl.net.orlik.data.deleteMatch
 import pl.net.orlik.data.recordingsDir
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.QueueSummarySource
+import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.MatchNotesTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.ReviewBadge
@@ -123,6 +124,7 @@ fun MatchesScreen(
     state: MatchesUiState,
     onOpenMatch: (String) -> Unit,
     onOpenPlanned: (String) -> Unit,
+    onOpenLive: (String) -> Unit,
     onNewMatch: () -> Unit,
     onOpenSync: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -185,7 +187,13 @@ fun MatchesScreen(
             items(matches.orEmpty(), key = { it.matchId }) { match ->
                 MatchCard(
                     match,
-                    onClick = { if (match.isPlanned) onOpenPlanned(match.matchId) else onOpenMatch(match.matchId) },
+                    onClick = {
+                        when {
+                            match.live -> onOpenLive(match.matchId)
+                            match.isPlanned -> onOpenPlanned(match.matchId)
+                            else -> onOpenMatch(match.matchId)
+                        }
+                    },
                     onLongClick = { toDelete = match.matchId },
                 )
             }
@@ -226,9 +234,10 @@ private fun MatchCard(match: MatchListItem, onClick: () -> Unit, onLongClick: ()
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(matchTitle(match.homeTeam, match.awayTeam), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    matchWhen(match),
+                    if (match.live) stringResource(R.string.live_match) else matchWhen(match),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (match.live) FontWeight.SemiBold else null,
+                    color = if (match.live) GreenDark else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     if (match.isPlanned) {
@@ -301,6 +310,7 @@ private fun MatchesScreenPreview() {
             ),
             onOpenMatch = {},
             onOpenPlanned = {},
+            onOpenLive = {},
             onNewMatch = {},
             onOpenSync = {},
             onOpenSettings = {},

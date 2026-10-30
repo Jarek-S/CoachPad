@@ -42,6 +42,8 @@ import pl.net.orlik.ui.EventEditScreen
 import pl.net.orlik.ui.EventEditViewModel
 import pl.net.orlik.ui.LineupScreen
 import pl.net.orlik.ui.LineupViewModel
+import pl.net.orlik.ui.LiveMatchScreen
+import pl.net.orlik.ui.LiveMatchViewModel
 import pl.net.orlik.ui.MatchReviewScreen
 import pl.net.orlik.ui.MatchReviewViewModel
 import pl.net.orlik.ui.MatchesScreen
@@ -86,6 +88,14 @@ class MainActivity : ComponentActivity() {
                 if (savedInstanceState == null) {
                     // Matches waiting on the watch: open sync at once, over the list (design doc, section 11)
                     LaunchedEffect(Unit) {
+                        // A match recorded live on the phone comes back first, its clock still running
+                        val live = withTimeoutOrNull(SUMMARY_WAIT_MILLIS) {
+                            PhoneDatabase.get(application).matchEventDao().liveMatchId().first()
+                        }
+                        if (live != null) {
+                            navController.navigate("$MATCH/$live/$LIVE")
+                            return@LaunchedEffect
+                        }
                         val summary = withTimeoutOrNull(SUMMARY_WAIT_MILLIS) { QueueSummarySource(application).summaries.first() }
                         if (summary?.matches?.isNotEmpty() == true) navController.navigate(SYNC)
                     }
@@ -99,6 +109,7 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onOpenMatch = { navController.navigate("$MATCH/$it") },
                                 onOpenPlanned = { navController.navigate("$MATCH/$it/$LINEUP") },
+                                onOpenLive = { navController.navigate("$MATCH/$it/$LIVE") },
                                 onNewMatch = { viewModel.plan { navController.navigate("$MATCH/$it/$LINEUP") } },
                                 onOpenSync = { navController.navigate(SYNC) },
                                 onOpenSettings = { navController.navigate(SETTINGS) },
@@ -169,6 +180,13 @@ class MainActivity : ComponentActivity() {
                                 onAddPlayer = viewModel::addPlayer,
                                 onUpdatePlayer = viewModel::updatePlayer,
                                 onRemovePlayer = viewModel::removePlayer,
+                                onStartMatch = {
+                                    viewModel.startMatch {
+                                        navController.navigate("$MATCH/$matchId/$LIVE") {
+                                            popUpTo("$MATCH/{$MATCH_ID}/$LINEUP") { inclusive = true }
+                                        }
+                                    }
+                                },
                                 onEnterFromNotes = { day ->
                                     viewModel.enterFromNotes(day) {
                                         // The review takes the lineup's place, with the first event open over it
@@ -176,6 +194,25 @@ class MainActivity : ComponentActivity() {
                                             popUpTo("$MATCH/{$MATCH_ID}/$LINEUP") { inclusive = true }
                                         }
                                         navController.navigate("$MATCH/$matchId/$NEW_EVENT")
+                                    }
+                                },
+                            )
+                        }
+                        composable("$MATCH/{$MATCH_ID}/$LIVE") { entry ->
+                            val matchId = checkNotNull(entry.arguments?.getString(MATCH_ID))
+                            val viewModel: LiveMatchViewModel = viewModel(factory = LiveMatchViewModel.factory(application, matchId))
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            LiveMatchScreen(
+                                state = state,
+                                onBack = { navController.popBackStack() },
+                                onPause = viewModel::pause,
+                                onResume = viewModel::resume,
+                                onEnd = {
+                                    viewModel.end {
+                                        // After the final whistle: the review, in place of the match screen
+                                        navController.navigate("$MATCH/$matchId") {
+                                            popUpTo("$MATCH/{$MATCH_ID}/$LIVE") { inclusive = true }
+                                        }
                                     }
                                 },
                             )
@@ -243,6 +280,7 @@ class MainActivity : ComponentActivity() {
         const val EVENT = "event"
         const val EVENT_ID = "eventId"
         const val NEW_EVENT = "new-event"
+        const val LIVE = "live"
 
         /** The summary is stored on the phone, so it normally comes at once. */
         const val SUMMARY_WAIT_MILLIS = 2_000L

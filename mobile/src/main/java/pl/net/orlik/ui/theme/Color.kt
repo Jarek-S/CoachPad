@@ -10,6 +10,9 @@ val GreenLight = Color(0xFFD9F6E2)
 val GreenPale = Color(0xFFF2FCF5)
 val GreenTrack = Color(0xFF9BE6AE)
 
+/** The running play clock of a live match, as on the watch. */
+val LiveClock = Color(0xFF5DCAA5)
+
 /** "Do przejrzenia": dark amber text on a light amber badge. */
 val ReviewText = Color(0xFF7A4A00)
 val ReviewBadge = Color(0xFFFCE8C8)
