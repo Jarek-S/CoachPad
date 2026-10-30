@@ -77,6 +77,14 @@ class PlatformJsonTest {
     }
 
     @Test
+    fun matchFromNotes_hasTheDayItWasPlayed_noTimes() {
+        val match = platformJsonObjectOf(export.copy(dateOnly = true), zone).getValue("match").jsonObject
+        assertEquals("\"2026-10-11\"", match.getValue("playedOn").toString())
+        assertFalse("startedAt" in match)
+        assertFalse("endedAt" in match)
+    }
+
+    @Test
     fun typedEvents_leaveOutWhatIsNotKnown() {
         val typed = export.copy(
             events = listOf(

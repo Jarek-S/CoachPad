@@ -30,8 +30,13 @@ internal fun platformJsonObjectOf(export: MatchExport, zone: ZoneId): JsonObject
         "match",
         buildJsonObject {
             put("id", export.matchId)
-            putTime("startedAt", export.startedAt, zone)
-            putTime("endedAt", export.endedAt, zone)
+            if (export.dateOnly) {
+                // Typed in from notes: only the day is known, not a time that could pass for midnight
+                export.startedAt?.let { put("playedOn", Instant.ofEpochMilli(it).atZone(zone).toLocalDate().toString()) }
+            } else {
+                putTime("startedAt", export.startedAt, zone)
+                putTime("endedAt", export.endedAt, zone)
+            }
             putTeam("homeTeam", export.homeTeam)
             putTeam("awayTeam", export.awayTeam)
             put(
