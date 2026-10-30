@@ -12,6 +12,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -67,13 +69,15 @@ class MainActivity : ComponentActivity() {
                 // Above all screens, so "Cofnij" stays when the edit screen returns to the list
                 val snackbar = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()
-                val undoMessage = stringResource(R.string.recording_deleted)
+                val recordingDeleted = stringResource(R.string.recording_deleted)
+                val eventDeleted = stringResource(R.string.event_deleted)
                 val undoLabel = stringResource(R.string.undo)
                 val offerUndo: (DeletedRecording) -> Unit = { deleted ->
                     // A previous offer ends (and its audio goes) when another recording is deleted
                     snackbar.currentSnackbarData?.dismiss()
                     scope.launch {
-                        val result = snackbar.showSnackbar(undoMessage, undoLabel, duration = SnackbarDuration.Short)
+                        val message = if (deleted.recording) recordingDeleted else eventDeleted
+                        val result = snackbar.showSnackbar(message, undoLabel, duration = SnackbarDuration.Short)
                         if (result == SnackbarResult.ActionPerformed) edits.undo(deleted) else edits.purge(deleted)
                     }
                 }
@@ -148,6 +152,10 @@ class MainActivity : ComponentActivity() {
                                 onExport = { format ->
                                     scope.launch { shareExport(this@MainActivity, viewModel.export(), format) }
                                 },
+                                onAddEvent = {
+                                    viewModel.stopPlayback()
+                                    navController.navigate("$MATCH/$matchId/$NEW_EVENT")
+                                },
                             )
                         }
                         composable("$MATCH/{$MATCH_ID}/$LINEUP") { entry ->
@@ -163,38 +171,13 @@ class MainActivity : ComponentActivity() {
                                 onRemovePlayer = viewModel::removePlayer,
                             )
                         }
+                        // An event to edit, or without one "Dodaj zdarzenie"
+                        composable("$MATCH/{$MATCH_ID}/$NEW_EVENT") { entry ->
+                            EventEdit(checkNotNull(entry.arguments?.getString(MATCH_ID)), null, navController, offerUndo)
+                        }
                         composable("$MATCH/{$MATCH_ID}/$EVENT/{$EVENT_ID}") { entry ->
                             val matchId = checkNotNull(entry.arguments?.getString(MATCH_ID))
-                            val eventId = checkNotNull(entry.arguments?.getString(EVENT_ID))
-                            val viewModel: EventEditViewModel =
-                                viewModel(factory = EventEditViewModel.factory(application, matchId, eventId))
-                            val state by viewModel.state.collectAsStateWithLifecycle()
-                            LaunchedEffect(viewModel) {
-                                viewModel.effect.collect { effect ->
-                                    when (effect) {
-                                        is EditEffect.Deleted -> offerUndo(effect.deleted)
-                                        is EditEffect.Finished -> {
-                                            effect.deleted?.let(offerUndo)
-                                            navController.popBackStack()
-                                        }
-                                    }
-                                }
-                            }
-                            EventEditScreen(
-                                state = state,
-                                onExit = viewModel::exit,
-                                onDelete = viewModel::delete,
-                                onTogglePlayback = viewModel::togglePlayback,
-                                positionMillis = viewModel::positionMillis,
-                                onType = viewModel::setType,
-                                onTeam = viewModel::setTeam,
-                                onNote = viewModel::setNote,
-                                onPlayer = viewModel::setPlayer,
-                                onAssist = viewModel::setAssist,
-                                onLinkedGoal = viewModel::setLinkedGoal,
-                                onSkip = viewModel::skip,
-                                onConfirm = viewModel::confirm,
-                            )
+                            EventEdit(matchId, checkNotNull(entry.arguments?.getString(EVENT_ID)), navController, offerUndo)
                         }
                     }
                     // Lifted above the edit screen's buttons
@@ -207,6 +190,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @Composable
+    private fun EventEdit(matchId: String, eventId: String?, navController: NavController, offerUndo: (DeletedRecording) -> Unit) {
+        val viewModel: EventEditViewModel = viewModel(factory = EventEditViewModel.factory(application, matchId, eventId))
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        LaunchedEffect(viewModel) {
+            viewModel.effect.collect { effect ->
+                when (effect) {
+                    is EditEffect.Deleted -> offerUndo(effect.deleted)
+                    is EditEffect.Finished -> {
+                        effect.deleted?.let(offerUndo)
+                        navController.popBackStack()
+                    }
+                }
+            }
+        }
+        EventEditScreen(
+            state = state,
+            onExit = viewModel::exit,
+            onDelete = viewModel::delete,
+            onTogglePlayback = viewModel::togglePlayback,
+            positionMillis = viewModel::positionMillis,
+            onType = viewModel::setType,
+            onTeam = viewModel::setTeam,
+            onNote = viewModel::setNote,
+            onPlayer = viewModel::setPlayer,
+            onAssist = viewModel::setAssist,
+            onLinkedGoal = viewModel::setLinkedGoal,
+            onMinute = viewModel::setMinute,
+            onSkip = viewModel::skip,
+            onConfirm = viewModel::confirm,
+            onAddAnother = viewModel::addAnother,
+        )
+    }
+
     private companion object {
         const val MATCHES = "matches"
         const val SYNC = "sync"
@@ -216,6 +233,7 @@ class MainActivity : ComponentActivity() {
         const val LINEUP = "lineup"
         const val EVENT = "event"
         const val EVENT_ID = "eventId"
+        const val NEW_EVENT = "new-event"
 
         /** The summary is stored on the phone, so it normally comes at once. */
         const val SUMMARY_WAIT_MILLIS = 2_000L

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,6 +93,7 @@ fun MatchReviewScreen(
     onTranscribe: () -> Unit,
     onTakeOverPlanned: (plannedId: String) -> Unit,
     onExport: (ExportFormat) -> Unit,
+    onAddEvent: () -> Unit,
 ) {
     var choosingPlanned by rememberSaveable { mutableStateOf(false) }
     if (choosingPlanned && state.planned.isNotEmpty()) {
@@ -156,6 +158,16 @@ fun MatchReviewScreen(
                 },
             )
         },
+        floatingActionButton = {
+            // Typed in from notes or added afterwards (design doc, section 3.3)
+            if (state.match != null) {
+                ExtendedFloatingActionButton(
+                    onClick = onAddEvent,
+                    icon = { Icon(painterResource(R.drawable.ic_add), null) },
+                    text = { Text(stringResource(R.string.add_event)) },
+                )
+            }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -163,7 +175,8 @@ fun MatchReviewScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = padding.calculateTopPadding() + 8.dp,
-                bottom = padding.calculateBottomPadding() + 16.dp,
+                // Room for the last row above "Dodaj zdarzenie"
+                bottom = padding.calculateBottomPadding() + 88.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -518,6 +531,7 @@ private fun MatchReviewScreenPreview() {
             onTranscribe = {},
             onTakeOverPlanned = {},
             onExport = {},
+            onAddEvent = {},
         )
     }
 }

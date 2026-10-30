@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,7 @@ import pl.net.orlik.review.matchReviewOf
 import pl.net.orlik.review.nextToReview
 import pl.net.orlik.review.positionOf
 import pl.net.orlik.review.relinked
+import pl.net.orlik.review.withDraftMinute
 import pl.net.orlik.shared.EventType
 
 data class EventEditUiState(
@@ -55,6 +57,10 @@ data class EventEditUiState(
     val goalCandidates: List<ReviewRow> = emptyList(),
     /** The match lineup, offered in the player fields of the chosen team. */
     val lineup: Map<Team, List<LineupPlayer>> = emptyMap(),
+    /** Added by hand, without a time: the minute can be typed (design doc, section 3.3). */
+    val addedByHand: Boolean = false,
+    /** Just added with "Dodaj zdarzenie": saved with "Zapisz" or "Dodaj kolejne", dropped if left empty. */
+    val isNew: Boolean = false,
 )
 
 /** What the screen does once an action is saved. */
@@ -66,10 +72,13 @@ sealed interface EditEffect {
     data class Deleted(val deleted: DeletedRecording) : EditEffect
 }
 
-/** One event at a time; "Pomiń", "Zatwierdź i dalej" and the bin move on to the next one. */
+/**
+ * One event at a time; "Pomiń", "Zatwierdź i dalej" and the bin move on to the next one. Without
+ * [startEventId] it adds a new event to the match ("Dodaj zdarzenie").
+ */
 class EventEditViewModel(
     private val matchId: String,
-    startEventId: String,
+    startEventId: String?,
     private val dao: MatchEventDao,
     private val lineup: LineupDao,
     private val edits: EventEdits,
@@ -78,7 +87,10 @@ class EventEditViewModel(
 
     private val player = AudioPlayer(viewModelScope)
 
-    private val eventId = MutableStateFlow(startEventId)
+    /** The event added on this screen and not saved yet; null when editing an existing one. */
+    private val newId = MutableStateFlow(if (startEventId == null) UUID.randomUUID().toString() else null)
+
+    private val eventId = MutableStateFlow(startEventId ?: checkNotNull(newId.value))
 
     /** Loaded once per event, so typing is not overwritten by database updates. */
     private val draft = MutableStateFlow<EventDraft?>(null)
@@ -91,13 +103,13 @@ class EventEditViewModel(
     val effect: Flow<EditEffect> = effects.receiveAsFlow()
 
     val state: StateFlow<EventEditUiState> = combine(
-        combine(eventId, draft, durationMillis, ::Triple),
+        combine(eventId, draft, durationMillis, newId) { id, draft, duration, new -> EditKey(id, draft, duration, id == new) },
         events,
         dao.match(matchId),
         player.playingId,
         lineup.lineupOf(matchId),
-    ) { (id, draft, duration), stored, match, playingId, players ->
-        val list = stored.orEmpty()
+    ) { (id, draft, duration, isNew), stored, match, playingId, players ->
+        val list = stored.orEmpty().let { if (draft != null) withDraftMinute(it, id, draft) else it }
         val review = matchReviewOf(list)
         val rows = (review.toReview + review.confirmed).associateBy { it.eventId }
         val event = list.firstOrNull { it.id == id }
@@ -116,11 +128,16 @@ class EventEditViewModel(
                 emptyList()
             },
             lineup = players.groupBy { it.team },
+            addedByHand = event != null && event.recordedAt == null && event.type?.isStructural != true,
+            isNew = isNew,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EventEditUiState())
 
     init {
-        load(startEventId)
+        viewModelScope.launch {
+            newId.value?.let { edits.add(matchId, it) }
+            load(eventId.value)
+        }
     }
 
     fun setType(type: EventType) {
@@ -134,10 +151,18 @@ class EventEditViewModel(
     /** "Zmień": a goal chosen by hand, or null for none. Kept until the type or team changes. */
     fun setLinkedGoal(goalId: String?) = draft.update { it.copy(linkedGoalId = goalId) }
 
+    /** The minute moves an event added by hand among the others, so its goal is found again too. */
+    fun setMinute(minute: String) {
+        if (draft.value?.withMinute(minute) != draft.value) changeAndRelink { it.withMinute(minute) }
+    }
+
     private fun changeAndRelink(change: (EventDraft) -> EventDraft) {
-        val list = events.value.orEmpty()
-        val event = list.firstOrNull { it.id == eventId.value } ?: return
-        draft.update { relinked(change(it), event, list) }
+        val id = eventId.value
+        val event = events.value.orEmpty().firstOrNull { it.id == id } ?: return
+        draft.update {
+            val changed = change(it)
+            relinked(changed, event, withDraftMinute(events.value.orEmpty(), id, changed))
+        }
     }
 
     fun setNote(note: String) = draft.update { it.copy(note = note) }
@@ -157,14 +182,44 @@ class EventEditViewModel(
     fun skip() = saveAndMoveOn(confirm = false)
 
     fun confirm() {
-        if (draft.value?.canConfirm == true) saveAndMoveOn(confirm = true)
+        if (draft.value?.canConfirm != true) return
+        if (newId.value == eventId.value) saveNew(another = false) else saveAndMoveOn(confirm = true)
     }
 
-    /** Back arrow: keeps what was typed without confirming. */
+    /** "Dodaj kolejne": saves the new event and opens another empty one, as when copying from notes. */
+    fun addAnother() {
+        if (draft.value?.canConfirm == true && newId.value == eventId.value) saveNew(another = true)
+    }
+
+    /**
+     * Back arrow: keeps what was typed without confirming. A new event left empty is dropped, so
+     * "Dodaj zdarzenie" opened by mistake leaves nothing behind.
+     */
     fun exit() {
         viewModelScope.launch {
-            draft.value?.let { edits.save(eventId.value, it, confirm = false) }
+            val id = eventId.value
+            val current = draft.value
+            if (id == newId.value && (current == null || current.isEmpty)) {
+                edits.discard(id)
+            } else {
+                current?.let { edits.save(id, it, confirm = false) }
+            }
             effects.send(EditEffect.Finished())
+        }
+    }
+
+    private fun saveNew(another: Boolean) {
+        viewModelScope.launch {
+            draft.value?.let { edits.save(eventId.value, it, confirm = true) }
+            if (another) {
+                val id = UUID.randomUUID().toString()
+                edits.add(matchId, id)
+                newId.value = id
+                load(id)
+            } else {
+                newId.value = null
+                effects.send(EditEffect.Finished())
+            }
         }
     }
 
@@ -206,6 +261,8 @@ class EventEditViewModel(
         }
     }
 
+    private data class EditKey(val id: String, val draft: EventDraft?, val durationMillis: Long?, val isNew: Boolean)
+
     private fun MutableStateFlow<EventDraft?>.update(change: (EventDraft) -> EventDraft) {
         value = value?.let(change)
     }
@@ -215,7 +272,8 @@ class EventEditViewModel(
     }
 
     companion object {
-        fun factory(app: Application, matchId: String, eventId: String): ViewModelProvider.Factory = viewModelFactory {
+        /** Without [eventId]: "Dodaj zdarzenie". */
+        fun factory(app: Application, matchId: String, eventId: String?): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val db = PhoneDatabase.get(app)
                 val dao = db.matchEventDao()

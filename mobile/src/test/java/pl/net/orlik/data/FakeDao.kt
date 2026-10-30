@@ -57,12 +57,17 @@ class FakeDao : MatchEventDao {
         linkedGoalId: String?,
         player: String?,
         assist: String?,
+        minute: Int?,
         status: ReviewStatus,
     ) = change(id) {
         it.copy(
             type = type, team = team, rawTranscript = note, linkedGoalEventId = linkedGoalId,
-            playerName = player, assistName = assist, status = status,
+            playerName = player, assistName = assist, minute = minute, status = status,
         )
+    }
+
+    override suspend fun deleteAddedEvent(id: String) {
+        events.removeAll { it.id == id && it.recordedAt == null && it.audioFileRef == null }
     }
 
     override suspend fun setStatus(id: String, status: ReviewStatus) = change(id) { it.copy(status = status) }

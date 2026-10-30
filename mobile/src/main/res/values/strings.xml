@@ -191,4 +191,13 @@
         <item quantity="one">%d assist</item>
         <item quantity="other">%d assists</item>
     </plurals>
+    <string name="add_event">Add event</string>
+    <string name="new_event">New event</string>
+    <string name="added_by_hand">added by hand</string>
+    <string name="minute_label">Minute</string>
+    <string name="minute_optional">optional</string>
+    <string name="add_another">Add another</string>
+    <string name="delete_event">Delete event</string>
+    <string name="event_deleted">Event deleted</string>
+    <string name="minute_mark" translatable="false">%1$d\'</string>
 </resources>

@@ -37,6 +37,35 @@ class EventEditsTest {
     }
 
     @Test
+    fun added_hasNoTime_keepsTypedMinute() = runBlocking {
+        edits.add("m1", "a")
+        val added = dao.event("a")!!
+        assertNull(added.recordedAt)
+        assertEquals(ReviewStatus.TO_REVIEW, added.status)
+
+        edits.save("a", EventDraft(EventType.GOAL, Team.AWAY, minute = "23"), confirm = true)
+        assertEquals(23, dao.event("a")?.minute)
+        assertFalse(edits.delete("a")!!.recording)
+    }
+
+    @Test
+    fun recorded_ignoresTypedMinute() = runBlocking {
+        recording("r")
+        edits.save("r", EventDraft(EventType.GOAL, Team.HOME, minute = "23"), confirm = true)
+        assertNull(dao.event("r")?.minute)
+    }
+
+    @Test
+    fun discard_onlyRemovesAnEventAddedByHand() = runBlocking {
+        recording("r")
+        edits.add("m1", "a")
+        edits.discard("a")
+        edits.discard("r")
+        assertNull(dao.event("a"))
+        assertTrue(dao.exists("r"))
+    }
+
+    @Test
     fun delete_keepsAudioUntilPurged() = runBlocking {
         recording("r")
         val deleted = edits.delete("r")!!

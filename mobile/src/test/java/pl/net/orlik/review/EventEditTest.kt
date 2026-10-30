@@ -69,6 +69,34 @@ class EventEditTest {
         val event = MatchEvent("e", "m", 0, EventType.GOAL, "e.m4a", 0, team = Team.AWAY, rawTranscript = "Marcin")
         assertEquals(EventDraft(EventType.GOAL, Team.AWAY, "Marcin"), draftOf(event))
         assertEquals("", draftOf(event.copy(rawTranscript = null)).note)
+        assertEquals("23", draftOf(event.copy(recordedAt = null, minute = 23)).minute)
+    }
+
+    @Test
+    fun minute_digitsOnly_zeroIsNone() {
+        assertEquals("45", EventDraft().withMinute("4a5'").minute)
+        assertEquals("120", EventDraft().withMinute("1200").minute)
+        assertEquals(45, EventDraft(minute = "45").storedMinute)
+        assertNull(EventDraft(minute = "0").storedMinute)
+        assertNull(EventDraft().storedMinute)
+    }
+
+    @Test
+    fun isEmpty_untilSomethingIsChosenOrTyped() {
+        assertTrue(EventDraft(note = " ", minute = "0").isEmpty)
+        assertFalse(EventDraft(type = EventType.NOTE).isEmpty)
+        assertFalse(EventDraft(team = Team.HOME).isEmpty)
+        assertFalse(EventDraft(minute = "7").isEmpty)
+        assertFalse(EventDraft(player = "Adam").isEmpty)
+    }
+
+    @Test
+    fun withDraftMinute_onlyForAnEventAddedByHand() {
+        val added = MatchEvent("a", "m", null, EventType.GOAL, null, 0)
+        val recorded = MatchEvent("r", "m", 5, EventType.GOAL, "r.m4a", 0)
+        val draft = EventDraft(minute = "12")
+        assertEquals(12, withDraftMinute(listOf(added, recorded), "a", draft)[0].minute)
+        assertNull(withDraftMinute(listOf(added, recorded), "r", draft)[1].minute)
     }
 
     @Test

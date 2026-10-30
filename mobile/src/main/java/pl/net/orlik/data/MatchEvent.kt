@@ -236,7 +236,7 @@ interface MatchEventDao {
     @Query(
         """
         UPDATE events SET type = :type, team = :team, raw_transcript = :note, linked_goal_event_id = :linkedGoalId,
-            player_name = :player, assist_name = :assist, status = :status
+            player_name = :player, assist_name = :assist, minute = :minute, status = :status
         WHERE id = :id
         """,
     )
@@ -248,8 +248,13 @@ interface MatchEventDao {
         linkedGoalId: String?,
         player: String?,
         assist: String?,
+        minute: Int?,
         status: ReviewStatus,
     )
+
+    /** Removes an event added by hand and left empty; nothing from the watch is removed like this. */
+    @Query("DELETE FROM events WHERE id = :id AND recorded_at IS NULL AND audio_file_ref IS NULL")
+    suspend fun deleteAddedEvent(id: String)
 
     @Query("UPDATE events SET status = :status WHERE id = :id")
     suspend fun setStatus(id: String, status: ReviewStatus)

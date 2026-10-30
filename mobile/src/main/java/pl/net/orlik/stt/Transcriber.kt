@@ -149,6 +149,7 @@ class Transcriber private constructor(private val context: Context) {
             linkedGoalId = draft.storedLink,
             player = draft.storedPlayer,
             assist = draft.storedAssist,
+            minute = event.minute,
             status = event.status,
         )
     }

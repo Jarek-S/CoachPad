@@ -5,8 +5,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import pl.net.orlik.review.EventDraft
 
-/** A recording deleted on the edit screen; [previousStatus] is what "Cofnij" restores. */
-data class DeletedRecording(val eventId: String, val previousStatus: ReviewStatus)
+/**
+ * A recording (or an event added by hand, [recording] false) deleted on the edit screen;
+ * [previousStatus] is what "Cofnij" restores.
+ */
+data class DeletedRecording(val eventId: String, val previousStatus: ReviewStatus, val recording: Boolean = true)
 
 /** Changes made on the edit screen. */
 class EventEdits(private val dao: MatchEventDao, private val recordingsDir: File) {
@@ -16,8 +19,20 @@ class EventEdits(private val dao: MatchEventDao, private val recordingsDir: File
         val event = dao.event(eventId) ?: return
         val status = if (confirm) ReviewStatus.CONFIRMED else event.status
         dao.updateReview(
-            eventId, draft.type, draft.team, draft.storedNote, draft.storedLink, draft.storedPlayer, draft.storedAssist, status,
+            eventId, draft.type, draft.team, draft.storedNote, draft.storedLink, draft.storedPlayer, draft.storedAssist,
+            // Only an event added by hand has a typed minute; a recorded one has its time
+            draft.storedMinute.takeIf { event.recordedAt == null }, status,
         )
+    }
+
+    /** "Dodaj zdarzenie": an empty event without a time, waiting to be described (design doc, section 3.3). */
+    suspend fun add(matchId: String, eventId: String) {
+        dao.insert(MatchEvent(eventId, matchId, recordedAt = null, type = null, audioFileRef = null, receivedAt = System.currentTimeMillis()))
+    }
+
+    /** Drops an event added by hand that was left without anything chosen or typed. */
+    suspend fun discard(eventId: String) {
+        dao.deleteAddedEvent(eventId)
     }
 
     /**
@@ -28,7 +43,7 @@ class EventEdits(private val dao: MatchEventDao, private val recordingsDir: File
         val event = dao.event(eventId) ?: return null
         if (event.type?.isStructural == true || event.status == ReviewStatus.DELETED) return null
         dao.setStatus(eventId, ReviewStatus.DELETED)
-        return DeletedRecording(eventId, event.status)
+        return DeletedRecording(eventId, event.status, recording = event.audioFileRef != null)
     }
 
     suspend fun undo(deleted: DeletedRecording) {

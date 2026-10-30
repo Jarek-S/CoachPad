@@ -5,6 +5,7 @@ import pl.net.orlik.review.hasPlayer
 import pl.net.orlik.review.hasAssist
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.BorderStroke
 import pl.net.orlik.ui.theme.InkMuted
@@ -116,8 +117,10 @@ fun EventEditScreen(
     onPlayer: (String) -> Unit,
     onAssist: (String) -> Unit,
     onLinkedGoal: (String?) -> Unit,
+    onMinute: (String) -> Unit,
     onSkip: () -> Unit,
     onConfirm: () -> Unit,
+    onAddAnother: () -> Unit,
 ) {
     // System back saves like the arrow, so nothing typed is lost
     BackHandler(onBack = onExit)
@@ -136,14 +139,21 @@ fun EventEditScreen(
                 },
                 title = {
                     Text(
-                        state.position?.let { stringResource(R.string.edit_position, it.index, it.count) }
-                            ?: stringResource(R.string.confirmed),
+                        when {
+                            state.isNew -> stringResource(R.string.new_event)
+                            else -> state.position?.let { stringResource(R.string.edit_position, it.index, it.count) }
+                                ?: stringResource(R.string.confirmed)
+                        },
                     )
                 },
                 actions = {
-                    if (row?.audioFileRef != null) {
+                    // A new event has nothing to delete yet: leaving it empty drops it
+                    if (row?.audioFileRef != null || (state.addedByHand && !state.isNew)) {
                         IconButton(onClick = onDelete) {
-                            Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete_recording))
+                            Icon(
+                                painterResource(R.drawable.ic_delete),
+                                stringResource(if (row?.audioFileRef != null) R.string.delete_recording else R.string.delete_event),
+                            )
                         }
                     }
                 },
@@ -153,9 +163,14 @@ fun EventEditScreen(
             if (draft != null) {
                 EditButtons(
                     draft = draft,
-                    pending = state.position != null,
+                    mode = when {
+                        state.isNew -> EditMode.NEW
+                        state.position != null -> EditMode.PENDING
+                        else -> EditMode.CONFIRMED
+                    },
                     onSkip = onSkip,
                     onConfirm = onConfirm,
+                    onAddAnother = onAddAnother,
                     modifier = Modifier.navigationBarsPadding().imePadding(),
                 )
             }
@@ -171,7 +186,16 @@ fun EventEditScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column {
-                Text(formatEventTime(row.playTimeMillis, row.minuteOnly), fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = OnStadium)
+                // An event added by hand shows the minute as typed below
+                val time = if (state.addedByHand) {
+                    draft.storedMinute?.let { stringResource(R.string.minute_mark, it) } ?: "–"
+                } else {
+                    formatEventTime(row.playTimeMillis, row.minuteOnly)
+                }
+                Text(time, fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = OnStadium)
+                if (state.addedByHand) {
+                    Text(stringResource(R.string.added_by_hand), style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted)
+                }
                 state.recordedAt?.let {
                     Text(
                         stringResource(R.string.play_minute_recorded, clockFormat.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))),
@@ -185,6 +209,9 @@ fun EventEditScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 if (row.audioFileRef != null) {
                     Player(state.playing, state.durationMillis, positionMillis, onTogglePlayback)
+                }
+                if (state.addedByHand) {
+                    MinuteField(draft.minute, onMinute)
                 }
                 row.transcript?.let {
                     Text(
@@ -245,6 +272,22 @@ fun EventEditScreen(
                 }
             }
         }
+    }
+}
+
+/** The football minute of an event added by hand; optional, as notes often have none. */
+@Composable
+private fun MinuteField(minute: String, onMinute: (String) -> Unit) {
+    Field(stringResource(R.string.minute_label)) {
+        OutlinedTextField(
+            value = minute,
+            onValueChange = onMinute,
+            singleLine = true,
+            placeholder = { Text(stringResource(R.string.minute_optional)) },
+            suffix = { Text("'") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            modifier = Modifier.width(160.dp),
+        )
     }
 }
 
@@ -508,14 +551,19 @@ private fun Player(playing: Boolean, durationMillis: Long?, positionMillis: () -
     }
 }
 
+/** Which buttons the event gets: waiting for review, already confirmed, or just added. */
+private enum class EditMode { PENDING, CONFIRMED, NEW }
+
 @Composable
 private fun EditButtons(
     draft: EventDraft,
-    pending: Boolean,
+    mode: EditMode,
     onSkip: () -> Unit,
     onConfirm: () -> Unit,
+    onAddAnother: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val secondary = mode != EditMode.CONFIRMED
     // Glass over the stadium instead of a white bar (design doc, section 11)
     GlassPanel(modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -527,27 +575,32 @@ private fun EditButtons(
             }
             missing?.let { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = OnStadiumHint) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (pending) {
+                if (secondary) {
+                    val adding = mode == EditMode.NEW
                     OutlinedButton(
-                        onClick = onSkip,
+                        onClick = if (adding) onAddAnother else onSkip,
+                        enabled = !adding || draft.canConfirm,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = OnStadium,
+                            disabledContentColor = OnStadium.copy(alpha = 0.5f),
+                        ),
                         border = BorderStroke(1.dp, GlassBorder),
                     ) {
-                        Text(stringResource(R.string.skip))
+                        Text(stringResource(if (adding) R.string.add_another else R.string.skip))
                     }
                 }
                 Button(
                     onClick = onConfirm,
                     enabled = draft.canConfirm,
-                    modifier = Modifier.weight(if (pending) 1.6f else 1f),
+                    modifier = Modifier.weight(if (secondary) 1.6f else 1f),
                     // The default disabled colours are dark-on-light and vanish on the stadium
                     colors = ButtonDefaults.buttonColors(
                         disabledContainerColor = OnStadium.copy(alpha = 0.12f),
                         disabledContentColor = OnStadium.copy(alpha = 0.5f),
                     ),
                 ) {
-                    Text(stringResource(if (pending) R.string.confirm_next else R.string.save))
+                    Text(stringResource(if (mode == EditMode.PENDING) R.string.confirm_next else R.string.save))
                 }
             }
         }
@@ -578,8 +631,10 @@ private fun EventEditScreenPreview() {
             onPlayer = {},
             onAssist = {},
             onLinkedGoal = {},
+            onMinute = {},
             onSkip = {},
             onConfirm = {},
+            onAddAnother = {},
         )
     }
 }

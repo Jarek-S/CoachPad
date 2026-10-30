@@ -203,4 +203,12 @@
         <item quantity="many">%d asyst</item>
         <item quantity="other">%d asysty</item>
     </plurals>
+    <string name="add_event">Dodaj zdarzenie</string>
+    <string name="new_event">Nowe zdarzenie</string>
+    <string name="added_by_hand">dodane ręcznie</string>
+    <string name="minute_label">Minuta</string>
+    <string name="minute_optional">opcjonalnie</string>
+    <string name="add_another">Dodaj kolejne</string>
+    <string name="delete_event">Usuń zdarzenie</string>
+    <string name="event_deleted">Usunięto zdarzenie</string>
 </resources>

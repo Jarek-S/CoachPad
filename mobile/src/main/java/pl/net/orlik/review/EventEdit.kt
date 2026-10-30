@@ -24,6 +24,8 @@ data class EventDraft(
     val player: String = "",
     /** The assist of a goal. */
     val assist: String = "",
+    /** The football minute of an event added by hand, as typed; empty when not known. */
+    val minute: String = "",
 ) {
     /**
      * A type that has no team (a note) drops the team, so a stale one is not saved. The player and
@@ -49,7 +51,20 @@ data class EventDraft(
     /** The note as stored: null when nothing was typed. */
     val storedNote: String?
         get() = note.trim().takeIf { it.isNotEmpty() }
+
+    /** The minute as stored: null when none (or 0) was typed. */
+    val storedMinute: Int?
+        get() = minute.toIntOrNull()?.takeIf { it > 0 }
+
+    /** Nothing chosen or typed: an event added by hand is dropped again on leaving it like this. */
+    val isEmpty: Boolean
+        get() = type == null && team == null && storedNote == null && player.isBlank() && assist.isBlank() && storedMinute == null
+
+    /** Keeps only digits, at most [MAX_MINUTE_DIGITS] of them. */
+    fun withMinute(typed: String): EventDraft = copy(minute = typed.filter { it.isDigit() }.take(MAX_MINUTE_DIGITS))
 }
+
+const val MAX_MINUTE_DIGITS = 3
 
 fun draftOf(event: MatchEvent): EventDraft =
     EventDraft(
@@ -59,7 +74,12 @@ fun draftOf(event: MatchEvent): EventDraft =
         linkedGoalId = event.linkedGoalEventId,
         player = event.playerName.orEmpty(),
         assist = event.assistName.orEmpty(),
+        minute = event.minute?.toString().orEmpty(),
     )
+
+/** [events] as they would be with the edited event at the minute typed in [draft], for its order. */
+fun withDraftMinute(events: List<MatchEvent>, eventId: String, draft: EventDraft): List<MatchEvent> =
+    events.map { if (it.id == eventId && it.recordedAt == null) it.copy(minute = draft.storedMinute) else it }
 
 /**
  * After the type or the team changes, a disallowed goal is linked again to the goal it cancels on
