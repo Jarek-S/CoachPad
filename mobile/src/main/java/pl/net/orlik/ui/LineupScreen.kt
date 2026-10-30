@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +60,8 @@ import pl.net.orlik.data.Team
 import pl.net.orlik.review.PlayerEntry
 import pl.net.orlik.review.parsePlayerEntry
 import pl.net.orlik.review.playerEntryText
+import pl.net.orlik.review.todayUtcMillis
+import java.time.ZoneId
 import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.Green
 import pl.net.orlik.ui.theme.GreenDark
@@ -75,7 +83,18 @@ fun LineupScreen(
     onAddPlayer: (Team, PlayerEntry) -> Unit,
     onUpdatePlayer: (id: Long, PlayerEntry) -> Unit,
     onRemovePlayer: (id: Long) -> Unit,
+    onEnterFromNotes: (utcDayMillis: Long) -> Unit,
 ) {
+    var choosingDate by rememberSaveable { mutableStateOf(false) }
+    if (choosingDate) {
+        PlayedOnDialog(
+            onConfirm = {
+                choosingDate = false
+                onEnterFromNotes(it)
+            },
+            onDismiss = { choosingDate = false },
+        )
+    }
     var team by rememberSaveable { mutableStateOf(Team.HOME) }
     var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
     state.players.values.flatten().firstOrNull { it.id == editingId }?.let { player ->
@@ -102,12 +121,23 @@ fun LineupScreen(
                 title = {
                     Column {
                         Text(stringResource(R.string.lineup_title))
-                        val subtitle = state.startedAt?.let { formatMatchStart(it) }
+                        val subtitle = state.startedAt?.let { formatMatchWhen(it, state.match?.playedAt != null) }
                             ?: state.match?.plannedAt?.let { stringResource(R.string.planned_match) }
                         subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted) }
                     }
                 },
             )
+        },
+        bottomBar = {
+            // Only before kickoff: a planned match is recorded one way or another (design doc, section 3.3)
+            val match = state.match
+            if (match != null && match.plannedAt != null && match.playedAt == null && state.startedAt == null) {
+                GlassPanel(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()) {
+                    Button(onClick = { choosingDate = true }, modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                        Text(stringResource(R.string.enter_from_notes))
+                    }
+                }
+            }
         },
     ) { padding ->
         val match = state.match ?: return@Scaffold
@@ -134,6 +164,30 @@ fun LineupScreen(
                 )
             }
         }
+    }
+}
+
+/** "Data meczu": today to start with, no day after it (a match from notes has been played). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayedOnDialog(onConfirm: (utcDayMillis: Long) -> Unit, onDismiss: () -> Unit) {
+    val today = todayUtcMillis(System.currentTimeMillis(), ZoneId.systemDefault())
+    val picker = rememberDatePickerState(
+        initialSelectedDateMillis = today,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= today
+        },
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { picker.selectedDateMillis?.let(onConfirm) }, enabled = picker.selectedDateMillis != null) {
+                Text(stringResource(R.string.enter_from_notes))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    ) {
+        DatePicker(state = picker, title = { Text(stringResource(R.string.played_on), Modifier.padding(start = 24.dp, top = 16.dp)) })
     }
 }
 
@@ -329,6 +383,7 @@ private fun LineupScreenPreview() {
             onAddPlayer = { _, _ -> },
             onUpdatePlayer = { _, _ -> },
             onRemovePlayer = {},
+            onEnterFromNotes = {},
         )
     }
 }

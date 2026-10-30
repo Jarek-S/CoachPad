@@ -284,7 +284,7 @@ private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDis
 /** The match's start, or "Zaplanowany" before kickoff. */
 @Composable
 private fun matchWhen(match: MatchListItem): String =
-    match.startedAt?.let { formatMatchStart(it) } ?: stringResource(R.string.planned_match)
+    match.startedAt?.let { formatMatchWhen(it, match.fromNotes) } ?: stringResource(R.string.planned_match)
 
 @Preview
 @Composable

@@ -170,6 +170,7 @@ class MatchExportTest {
             ),
         )
         assertEquals(kickOff, export.startedAt)
+        assertTrue(export.dateOnly)
         assertEquals(1, export.score.home)
         assertEquals(1, export.score.away)
         val goal = export.events.first()

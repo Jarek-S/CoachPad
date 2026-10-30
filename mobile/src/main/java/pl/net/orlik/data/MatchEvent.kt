@@ -145,6 +145,8 @@ data class MatchListItem(
     /** Counted goals, as in the export: confirmed and not cancelled by a confirmed disallowed goal. */
     val homeGoals: Int = 0,
     val awayGoals: Int = 0,
+    /** Typed in from notes: [startedAt] is the date it was played, without a time. */
+    val fromNotes: Boolean = false,
 ) {
     /** Planned on the phone, nothing from the watch yet. */
     val isPlanned: Boolean get() = startedAt == null
@@ -167,11 +169,14 @@ interface MatchEventDao {
     @Query("SELECT EXISTS(SELECT 1 FROM matches WHERE id = :matchId)")
     suspend fun matchExists(matchId: String): Boolean
 
-    /** Planned matches without events yet; one with neither team names nor players plans nothing. */
+    /**
+     * Planned matches without events yet; one with neither team names nor players plans nothing,
+     * and one typed in from notes is no longer planned.
+     */
     @Query(
         """
         SELECT id, planned_at AS plannedAt FROM matches m
-        WHERE planned_at IS NOT NULL
+        WHERE planned_at IS NOT NULL AND played_at IS NULL
             AND NOT EXISTS (SELECT 1 FROM events e WHERE e.match_id = m.id)
             AND (home_team IS NOT NULL OR away_team IS NOT NULL
                 OR EXISTS (SELECT 1 FROM lineup_players p WHERE p.match_id = m.id))
@@ -213,8 +218,9 @@ interface MatchEventDao {
     /** Matches on the phone: planned ones first, then newest first. */
     @Query(
         """
-        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals FROM (
+        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals, fromNotes FROM (
             SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
+                m.played_at IS NOT NULL AS fromNotes,
                 COALESCE((SELECT MIN(recorded_at) FROM events e WHERE e.match_id = m.id), m.played_at) AS startedAt,
                 (SELECT COUNT(*) FROM events e WHERE e.match_id = m.id AND e.status = 'TO_REVIEW') AS toReview,
                 (SELECT COUNT(*) FROM events e

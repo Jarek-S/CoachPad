@@ -51,4 +51,8 @@ interface LineupDao {
 
     @Query("UPDATE matches SET away_team = :name WHERE id = :matchId")
     suspend fun setAwayTeam(matchId: String, name: String?)
+
+    /** "Wpisz z notatek": the planned match becomes one typed in from notes, played on [playedAt]. */
+    @Query("UPDATE matches SET played_at = :playedAt WHERE id = :matchId")
+    suspend fun setPlayedAt(matchId: String, playedAt: Long)
 }

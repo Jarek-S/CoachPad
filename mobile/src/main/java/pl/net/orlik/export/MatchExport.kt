@@ -52,6 +52,8 @@ data class MatchExport(
     val awayTeam: String?,
     /** MATCH_START, else the date given for a match typed in from notes; null when neither is known. */
     val startedAt: Long?,
+    /** Typed in from notes: [startedAt] is only the day it was played, not a time. */
+    val dateOnly: Boolean = false,
     /** MATCH_END; null when it was not synced. */
     val endedAt: Long?,
     val score: Score,
@@ -97,6 +99,7 @@ fun matchExportOf(match: Match, events: List<MatchEvent>): MatchExport {
         homeTeam = match.homeTeam,
         awayTeam = match.awayTeam,
         startedAt = confirmed.firstOrNull { it.type == EventType.MATCH_START }?.recordedAt ?: match.playedAt,
+        dateOnly = match.playedAt != null,
         endedAt = confirmed.lastOrNull { it.type == EventType.MATCH_END }?.recordedAt,
         score = Score(
             home = exported.count { it.counted && it.team == Team.HOME },

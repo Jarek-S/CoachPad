@@ -17,6 +17,8 @@ data class ShareTextLabels(
     val awayTeam: String,
     /** java.time pattern of the match date, e.g. "EEEE, d MMMM yyyy, HH:mm". */
     val datePattern: String,
+    /** The same without the time, for a match typed in from notes, e.g. "EEEE, d MMMM yyyy". */
+    val dayPattern: String,
     val locale: Locale,
     /** After a cancelled goal; %s is the minute of the disallowed goal, e.g. "nie liczy się (gol nieuznany, %s)". */
     val notCounted: String,
@@ -71,7 +73,7 @@ fun shareTextOf(export: MatchExport, labels: ShareTextLabels, zone: ZoneId): Str
     val away = export.awayTeam ?: labels.awayTeam
     val byId = export.events.associateBy { it.id }
     val date = (export.startedAt ?: export.events.firstNotNullOfOrNull { it.recordedAt })?.let {
-        DateTimeFormatter.ofPattern(labels.datePattern, labels.locale).format(Instant.ofEpochMilli(it).atZone(zone))
+        DateTimeFormatter.ofPattern(if (export.dateOnly) labels.dayPattern else labels.datePattern, labels.locale).format(Instant.ofEpochMilli(it).atZone(zone))
     }
 
     val lines = export.events.mapNotNull { event ->

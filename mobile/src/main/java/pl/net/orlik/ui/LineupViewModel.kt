@@ -19,7 +19,9 @@ import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.Team
 import pl.net.orlik.review.PlayerEntry
+import java.time.ZoneId
 import pl.net.orlik.review.lineupOrder
+import pl.net.orlik.review.playedAtOf
 import pl.net.orlik.review.teamNameOf
 
 data class LineupUiState(
@@ -69,6 +71,14 @@ class LineupViewModel(
 
     fun removePlayer(id: Long) {
         viewModelScope.launch { lineup.delete(id) }
+    }
+
+    /** "Wpisz z notatek": the match was played on the chosen day; [then] opens it to type events in. */
+    fun enterFromNotes(utcDayMillis: Long, then: () -> Unit) {
+        viewModelScope.launch {
+            lineup.setPlayedAt(matchId, playedAtOf(utcDayMillis, ZoneId.systemDefault()))
+            then()
+        }
     }
 
     companion object {

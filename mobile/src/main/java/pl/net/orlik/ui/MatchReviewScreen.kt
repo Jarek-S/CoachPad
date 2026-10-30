@@ -137,7 +137,7 @@ fun MatchReviewScreen(
                         Text(matchTitle(home, away))
                         state.startedAt?.let {
                             Text(
-                                formatMatchStart(it),
+                                formatMatchWhen(it, state.match?.playedAt != null),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = OnStadiumMuted,
                             )

@@ -1,5 +1,8 @@
 package pl.net.orlik.review
 
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 import pl.net.orlik.data.MatchListItem
 
 // Matches planned on the phone before kickoff, taken over by a match from the watch (design doc, section 11).
@@ -27,3 +30,14 @@ fun plannedChoices(matches: List<MatchListItem>, matchId: String): List<MatchLis
 }
 
 private val MatchListItem.hasLineup: Boolean get() = homeTeam != null || awayTeam != null || players > 0
+
+/**
+ * When a match typed in from notes was played: the start of the chosen day in [zone]. The date
+ * picker gives the day as UTC midnight, [utcDayMillis].
+ */
+fun playedAtOf(utcDayMillis: Long, zone: ZoneId): Long =
+    Instant.ofEpochMilli(utcDayMillis).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
+
+/** Today as the date picker counts days: UTC midnight of today's date in [zone]. */
+fun todayUtcMillis(nowMillis: Long, zone: ZoneId): Long =
+    Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()

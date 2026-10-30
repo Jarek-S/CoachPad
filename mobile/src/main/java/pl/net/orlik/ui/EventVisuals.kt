@@ -30,6 +30,16 @@ import pl.net.orlik.ui.theme.YellowCard
 fun formatMatchStart(epochMillis: Long): String =
     formatMatchStart(epochMillis, stringResource(R.string.match_start_format), LocalConfiguration.current.locales[0])
 
+/** The day a match typed in from notes was played: no time is known. */
+@Composable
+fun formatMatchDay(epochMillis: Long): String =
+    formatMatchStart(epochMillis, stringResource(R.string.match_day_format), LocalConfiguration.current.locales[0])
+
+/** [formatMatchDay] for a match from notes, else [formatMatchStart]. */
+@Composable
+fun formatMatchWhen(epochMillis: Long, fromNotes: Boolean): String =
+    if (fromNotes) formatMatchDay(epochMillis) else formatMatchStart(epochMillis)
+
 fun formatMatchStart(epochMillis: Long, pattern: String, locale: Locale): String =
     DateTimeFormatter.ofPattern(pattern, locale).format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 

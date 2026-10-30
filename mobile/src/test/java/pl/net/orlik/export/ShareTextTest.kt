@@ -17,6 +17,7 @@ class ShareTextTest {
         homeTeam = "Gospodarze",
         awayTeam = "Goście",
         datePattern = "EEEE, d MMMM yyyy, HH:mm",
+        dayPattern = "EEEE, d MMMM yyyy",
         locale = Locale.forLanguageTag("pl"),
         notCounted = "nie liczy się (gol nieuznany, %s)",
         disallowedGoal = "Gol nieuznany",
@@ -31,6 +32,7 @@ class ShareTextTest {
         homeTeam = "Home",
         awayTeam = "Away",
         datePattern = "EEEE, d MMMM yyyy, HH:mm",
+        dayPattern = "EEEE, d MMMM yyyy",
         locale = Locale.ENGLISH,
         notCounted = "does not count (disallowed, %s)",
         disallowedGoal = "Disallowed goal",
@@ -200,5 +202,12 @@ class ShareTextTest {
         )
 
         assertTrue(shareTextOf(typed, polish, zone).endsWith("\n\n⚽ Orły"))
+    }
+
+    @Test
+    fun matchFromNotes_dateWithoutTime() {
+        val notes = export.copy(dateOnly = true)
+        val text = shareTextOf(notes, polish, zone)
+        assertTrue(text, "niedziela, 11 października 2026\n" in text)
     }
 }

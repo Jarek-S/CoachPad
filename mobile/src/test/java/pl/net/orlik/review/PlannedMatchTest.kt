@@ -3,6 +3,10 @@ package pl.net.orlik.review
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import pl.net.orlik.data.MatchListItem
 
 class PlannedMatchTest {
@@ -46,5 +50,20 @@ class PlannedMatchTest {
     fun matchWithTeamNamesOrPlayers_isOfferedNothing() {
         assertEquals(emptyList<MatchListItem>(), plannedChoices(listOf(planned("p1", "Orły"), synced("m1", home = "Sokoły")), "m1"))
         assertEquals(emptyList<MatchListItem>(), plannedChoices(listOf(planned("p1", "Orły"), synced("m1", players = 2)), "m1"))
+    }
+
+    @Test
+    fun playedAt_isTheStartOfTheChosenDayInTheZone() {
+        val warsaw = ZoneId.of("Europe/Warsaw")
+        val picked = LocalDate.of(2026, 10, 30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(warsaw).toInstant().toEpochMilli(), playedAtOf(picked, warsaw))
+    }
+
+    @Test
+    fun today_isTheLocalDateAsUtcMidnight() {
+        val warsaw = ZoneId.of("Europe/Warsaw")
+        // 00:30 in Warsaw is still the previous day in UTC
+        val now = LocalDateTime.of(2026, 10, 30, 0, 30).atZone(warsaw).toInstant().toEpochMilli()
+        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(), todayUtcMillis(now, warsaw))
     }
 }

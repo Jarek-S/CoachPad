@@ -10,6 +10,7 @@ fun shareTextLabelsOf(resources: Resources) = ShareTextLabels(
     homeTeam = resources.getString(R.string.team_home),
     awayTeam = resources.getString(R.string.team_away),
     datePattern = resources.getString(R.string.share_date_format),
+    dayPattern = resources.getString(R.string.share_day_format),
     locale = resources.configuration.locales[0],
     notCounted = resources.getString(R.string.share_not_counted),
     disallowedGoal = resources.getString(R.string.type_goal_disallowed),

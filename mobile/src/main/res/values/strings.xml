@@ -200,4 +200,8 @@
     <string name="delete_event">Delete event</string>
     <string name="event_deleted">Event deleted</string>
     <string name="minute_mark" translatable="false">%1$d\'</string>
+    <string name="share_day_format">EEEE, d MMMM yyyy</string>
+    <string name="match_day_format">EEEE, d MMMM</string>
+    <string name="enter_from_notes">Enter from notes</string>
+    <string name="played_on">Played on</string>
 </resources>

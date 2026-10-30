@@ -169,6 +169,15 @@ class MainActivity : ComponentActivity() {
                                 onAddPlayer = viewModel::addPlayer,
                                 onUpdatePlayer = viewModel::updatePlayer,
                                 onRemovePlayer = viewModel::removePlayer,
+                                onEnterFromNotes = { day ->
+                                    viewModel.enterFromNotes(day) {
+                                        // The review takes the lineup's place, with the first event open over it
+                                        navController.navigate("$MATCH/$matchId") {
+                                            popUpTo("$MATCH/{$MATCH_ID}/$LINEUP") { inclusive = true }
+                                        }
+                                        navController.navigate("$MATCH/$matchId/$NEW_EVENT")
+                                    }
+                                },
                             )
                         }
                         // An event to edit, or without one "Dodaj zdarzenie"
