@@ -85,6 +85,7 @@ fun LineupScreen(
     onUpdatePlayer: (id: Long, PlayerEntry) -> Unit,
     onRemovePlayer: (id: Long) -> Unit,
     onPlannedDay: (utcDayMillis: Long) -> Unit,
+    onTakeOverPlanned: (plannedId: String) -> Unit,
     onEnterFromNotes: () -> Unit,
     onStartMatch: () -> Unit,
 ) {
@@ -102,6 +103,17 @@ fun LineupScreen(
     }
     // Only before kickoff: a planned match is recorded one way or another (design doc, section 3.3)
     val plannedAt = state.match?.takeIf { it.playedAt == null && state.startedAt == null }?.plannedAt
+    var choosingPlanned by rememberSaveable { mutableStateOf(false) }
+    if (choosingPlanned && state.planned.isNotEmpty()) {
+        PlannedMatchDialog(
+            planned = state.planned,
+            onConfirm = {
+                choosingPlanned = false
+                onTakeOverPlanned(it)
+            },
+            onDismiss = { choosingPlanned = false },
+        )
+    }
     var team by rememberSaveable { mutableStateOf(Team.HOME) }
     var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
     state.players.values.flatten().firstOrNull { it.id == editingId }?.let { player ->
@@ -204,6 +216,19 @@ fun LineupScreen(
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // A plan of another day than the one the watch started on (design doc, section 11)
+            if (state.planned.isNotEmpty()) {
+                OutlinedButton(
+                    onClick = { choosingPlanned = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                    border = BorderStroke(1.dp, GlassBorder),
+                ) {
+                    Icon(painterResource(R.drawable.ic_calendar), null, Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.take_from_planned))
+                }
+            }
             TeamTabs(team, match, state.players, onSelect = { team = it })
             // Keyed by team, so the fields start from that team's saved values
             key(team) {
@@ -414,6 +439,7 @@ private fun LineupScreenPreview() {
             onUpdatePlayer = { _, _ -> },
             onRemovePlayer = {},
             onPlannedDay = {},
+            onTakeOverPlanned = {},
             onEnterFromNotes = {},
             onStartMatch = {},
         )

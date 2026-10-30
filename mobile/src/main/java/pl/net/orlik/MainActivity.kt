@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onTranscribe = viewModel::transcribe,
                                 onTakeOverPlanned = viewModel::takeOverPlanned,
+                                onDeclinePlanned = viewModel::declinePlanned,
                                 onOpenLineup = {
                                     viewModel.stopPlayback()
                                     navController.navigate("$MATCH/$matchId/$LINEUP")
@@ -188,6 +189,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onPlannedDay = viewModel::setPlannedDay,
+                                onTakeOverPlanned = viewModel::takeOverPlanned,
                                 onEnterFromNotes = {
                                     viewModel.enterFromNotes {
                                         // The review takes the lineup's place, with the first event open over it

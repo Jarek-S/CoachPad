@@ -17,12 +17,15 @@ import pl.net.orlik.data.LiveRecorder
 import pl.net.orlik.data.LineupPlayer
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
+import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.Team
 import pl.net.orlik.review.LiveAction
 import pl.net.orlik.review.PlayerEntry
 import java.time.ZoneId
 import pl.net.orlik.review.lineupOrder
+import pl.net.orlik.review.plannedChoices
+import pl.net.orlik.stt.Transcriber
 import pl.net.orlik.review.dayStartOf
 import pl.net.orlik.review.teamNameOf
 
@@ -34,6 +37,8 @@ data class LineupUiState(
     val players: Map<Team, List<LineupPlayer>> = emptyMap(),
     /** Another match is being recorded live on the phone: this one cannot start yet. */
     val otherMatchLive: Boolean = false,
+    /** A match from the watch without a lineup: the planned matches it can take one from. */
+    val planned: List<MatchListItem> = emptyList(),
 )
 
 class LineupViewModel(
@@ -41,6 +46,7 @@ class LineupViewModel(
     private val events: MatchEventDao,
     private val lineup: LineupDao,
     private val recorder: LiveRecorder,
+    private val transcriber: Transcriber,
 ) : ViewModel() {
 
     val state: StateFlow<LineupUiState> = combine(
@@ -48,12 +54,14 @@ class LineupViewModel(
         events.eventsOf(matchId).map { list -> list.mapNotNull { it.recordedAt }.minOrNull() },
         lineup.lineupOf(matchId),
         events.liveMatchId(),
-    ) { match, startedAt, players, liveId ->
+        events.matches(),
+    ) { match, startedAt, players, liveId, matches ->
         LineupUiState(
             match = match,
             startedAt = startedAt ?: match?.playedAt,
             players = players.sortedWith(lineupOrder).groupBy { it.team },
             otherMatchLive = liveId != null && liveId != matchId,
+            planned = plannedChoices(matches, matchId),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LineupUiState())
 
@@ -78,6 +86,14 @@ class LineupViewModel(
 
     fun removePlayer(id: Long) {
         viewModelScope.launch { lineup.delete(id) }
+    }
+
+    /** "Weź z meczu zaplanowanego": as joining in the review, with a plan of any day. */
+    fun takeOverPlanned(plannedId: String) {
+        viewModelScope.launch {
+            events.takeOverPlanned(plannedId, matchId)
+            transcriber.reread(matchId)
+        }
     }
 
     /** "Rozpocznij mecz": kickoff now, recorded on the phone; [then] opens the match screen. */
@@ -105,7 +121,7 @@ class LineupViewModel(
         fun factory(app: Application, matchId: String): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val db = PhoneDatabase.get(app)
-                LineupViewModel(matchId, db.matchEventDao(), db.lineupDao(), LiveRecorder(db.matchEventDao()))
+                LineupViewModel(matchId, db.matchEventDao(), db.lineupDao(), LiveRecorder(db.matchEventDao()), Transcriber.get(app))
             }
         }
     }

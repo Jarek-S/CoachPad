@@ -91,44 +91,14 @@ class EventReceiverTest {
     }
 
     @Test
-    fun newMatch_takesOverTheOnlyPlannedMatch() = runBlocking {
+    fun newMatch_takesNoPlannedMatch() = runBlocking {
+        // Joined by hand in the review: the watch may have recorded another match (design doc, section 11)
         dao.matches += Match("p1", "Orły", "Rywale FC", plannedAt = 500)
         dao.lineup += LineupPlayer(1, "p1", Team.HOME, 7, "Marcin")
 
         receiver.onMetadata(start)
 
-        assertEquals(listOf(Match("m1", "Orły", "Rywale FC")), dao.matches)
-        assertEquals("m1", dao.lineup.single().matchId)
-    }
-
-    @Test
-    fun laterEvents_ofAKnownMatch_takeNoPlannedMatch() = runBlocking {
-        receiver.onMetadata(start)
-        dao.matches += Match("p1", "Orły", null, plannedAt = 1_500)
-
-        receiver.onMetadata(recording)
-        receiver.onAudio("r1", "audio".byteInputStream())
-
-        assertEquals(listOf(Match("m1"), Match("p1", "Orły", null, plannedAt = 1_500)), dao.matches)
-    }
-
-    @Test
-    fun emptyPlannedMatch_isNotTakenOver() = runBlocking {
-        dao.matches += Match("p1", plannedAt = 500)
-
-        receiver.onMetadata(start)
-
-        assertEquals(listOf(Match("p1", plannedAt = 500), Match("m1")), dao.matches)
-    }
-
-    @Test
-    fun severalPlannedMatches_areLeftAlone() = runBlocking {
-        dao.matches += Match("p1", "Orły", null, plannedAt = 500)
-        dao.matches += Match("p2", "Sokoły", null, plannedAt = 600)
-
-        receiver.onMetadata(start)
-
-        assertEquals(Match("m1"), dao.matches.last())
-        assertEquals(3, dao.matches.size)
+        assertEquals(listOf(Match("p1", "Orły", "Rywale FC", plannedAt = 500), Match("m1")), dao.matches)
+        assertEquals("p1", dao.lineup.single().matchId)
     }
 }

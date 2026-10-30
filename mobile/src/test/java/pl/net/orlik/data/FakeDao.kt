@@ -2,7 +2,6 @@ package pl.net.orlik.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import pl.net.orlik.review.PlannedMatch
 import pl.net.orlik.shared.EventType
 
 /** In-memory stand-in for Room in JVM tests. */
@@ -20,15 +19,6 @@ class FakeDao : MatchEventDao {
     }
 
     override suspend fun exists(id: String) = events.any { it.id == id }
-
-    override suspend fun matchExists(matchId: String) = matches.any { it.id == matchId }
-
-    override suspend fun plannedMatches() = matches
-        .filter { m ->
-            m.plannedAt != null && events.none { it.matchId == m.id } &&
-                (m.homeTeam != null || m.awayTeam != null || lineup.any { it.matchId == m.id })
-        }
-        .map { PlannedMatch(it.id, it.plannedAt!!) }
 
     override suspend fun copyTeamNames(plannedId: String, matchId: String) {
         val planned = matches.firstOrNull { it.id == plannedId } ?: return

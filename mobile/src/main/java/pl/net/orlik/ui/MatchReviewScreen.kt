@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.DropdownMenu
@@ -70,6 +72,7 @@ import pl.net.orlik.review.formatPlayTime
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.stt.SttError
 import pl.net.orlik.stt.TranscriptionStatus
+import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.GreenLight
@@ -92,6 +95,7 @@ fun MatchReviewScreen(
     onOpenLineup: () -> Unit,
     onTranscribe: () -> Unit,
     onTakeOverPlanned: (plannedId: String) -> Unit,
+    onDeclinePlanned: () -> Unit,
     onExport: (ExportFormat) -> Unit,
     onAddEvent: () -> Unit,
 ) {
@@ -181,7 +185,13 @@ fun MatchReviewScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state.planned.isNotEmpty()) {
-                item { PlannedMatchBar(onChoose = { choosingPlanned = true }) }
+                item {
+                    PlannedMatchBar(
+                        planned = state.planned,
+                        onJoin = { state.planned.singleOrNull()?.let { onTakeOverPlanned(it.matchId) } ?: run { choosingPlanned = true } },
+                        onDecline = onDeclinePlanned,
+                    )
+                }
             }
             if (state.stt.available || state.stt.status != TranscriptionStatus.Idle) {
                 item { TranscriptionBar(state.stt, onTranscribe) }
@@ -243,57 +253,39 @@ private fun ExportMenu(onExport: (ExportFormat) -> Unit) {
     }
 }
 
-/** A synced match without a lineup, while planned matches wait on the list (design doc, section 11). */
+/**
+ * A match from the watch without a lineup, with matches planned for its day on the list (design doc,
+ * section 11): one is joined at a tap, several are chosen from.
+ */
 @Composable
-private fun PlannedMatchBar(onChoose: () -> Unit) {
+private fun PlannedMatchBar(planned: List<MatchListItem>, onJoin: () -> Unit, onDecline: () -> Unit) {
     GlassPanel(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(stringResource(R.string.planned_offer), color = OnStadium, modifier = Modifier.weight(1f))
-            Button(onClick = onChoose) { Text(stringResource(R.string.take_over_planned)) }
+            val only = planned.singleOrNull()
+            Text(
+                if (only != null) {
+                    stringResource(R.string.planned_offer_one, matchTitle(only.homeTeam, only.awayTeam))
+                } else {
+                    stringResource(R.string.planned_offer)
+                },
+                color = OnStadium,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onDecline,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                    border = BorderStroke(1.dp, GlassBorder),
+                ) {
+                    Text(stringResource(R.string.decline_planned))
+                }
+                Button(onClick = onJoin) { Text(stringResource(R.string.take_over_planned)) }
+            }
         }
     }
-}
-
-/** Which planned match this one is; the first is chosen to start with. */
-@Composable
-private fun PlannedMatchDialog(planned: List<MatchListItem>, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
-    var chosen by rememberSaveable { mutableStateOf(planned.first().matchId) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.take_over_planned_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.take_over_planned_text))
-                Column(Modifier.selectableGroup()) {
-                    planned.forEach { match ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = match.matchId == chosen, role = Role.RadioButton) { chosen = match.matchId }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = match.matchId == chosen, onClick = null)
-                            Column(Modifier.padding(start = 12.dp)) {
-                                Text(matchTitle(match.homeTeam, match.awayTeam), style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    pluralStringResource(R.plurals.players, match.players, match.players),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(chosen) }) { Text(stringResource(R.string.take_over_planned)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
 }
 
 @Composable
@@ -530,6 +522,7 @@ private fun MatchReviewScreenPreview() {
             onOpenLineup = {},
             onTranscribe = {},
             onTakeOverPlanned = {},
+            onDeclinePlanned = {},
             onExport = {},
             onAddEvent = {},
         )

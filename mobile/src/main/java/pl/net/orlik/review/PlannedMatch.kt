@@ -5,29 +5,26 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import pl.net.orlik.data.MatchListItem
 
-// Matches planned on the phone before kickoff, taken over by a match from the watch (design doc, section 11).
-
-/** A match created on the phone with a lineup or team names, still without events from the watch. */
-data class PlannedMatch(val id: String, val plannedAt: Long)
+// Matches planned on the phone before kickoff, joined by hand with a match from the watch (design doc, section 11).
 
 /**
- * The planned match a watch match new to the phone takes over, given the time of its first event
- * received: the only one planned before it. Null when there is none or several to choose from;
- * a match planned later cannot be for a match that had already started.
- */
-fun plannedMatchFor(firstEventAt: Long, planned: List<PlannedMatch>): String? =
-    planned.filter { it.plannedAt <= firstEventAt }.singleOrNull()?.id
-
-/**
- * Planned matches a synced match can still be joined with by hand: offered only while the match
- * has neither team names nor players, so nothing typed for it is replaced. Planned matches with
- * nothing in them plan nothing and are left out.
+ * Planned matches a match from the watch can still be joined with, the soonest first: offered only
+ * while the match has neither team names nor players, so nothing typed for it is replaced. Planned
+ * matches with nothing in them plan nothing and are left out; a match recorded or typed in on the
+ * phone was planned itself and is offered none.
  */
 fun plannedChoices(matches: List<MatchListItem>, matchId: String): List<MatchListItem> {
     val match = matches.firstOrNull { it.matchId == matchId } ?: return emptyList()
-    if (match.isPlanned || match.hasLineup) return emptyList()
-    return matches.filter { it.isPlanned && it.hasLineup }
+    if (match.isPlanned || match.plannedAt != null || match.hasLineup) return emptyList()
+    return matches.filter { it.isPlanned && it.hasLineup }.sortedBy { it.plannedAt }
 }
+
+/**
+ * Of the [choices], the ones planned for the day a match from the watch started, [startedAt], in
+ * [zone]: the review offers only these, however late the match is synced.
+ */
+fun plannedOnTheDay(choices: List<MatchListItem>, startedAt: Long, zone: ZoneId): List<MatchListItem> =
+    choices.filter { it.plannedAt != null && utcDayOf(it.plannedAt, zone) == utcDayOf(startedAt, zone) }
 
 private val MatchListItem.hasLineup: Boolean get() = homeTeam != null || awayTeam != null || players > 0
 

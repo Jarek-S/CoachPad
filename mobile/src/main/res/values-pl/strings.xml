@@ -47,7 +47,11 @@
     <string name="delete_match_hint">Przytrzymaj mecz, aby go usunąć</string>
     <string name="new_match">Nowy mecz</string>
     <string name="planned_match">Zaplanowany</string>
-    <string name="planned_offer">Ten mecz nie ma składu. Wziąć go z meczu zaplanowanego?</string>
+    <string name="planned_offer">Wziąć skład z meczu zaplanowanego na ten dzień?</string>
+    <string name="planned_offer_one">Wziąć skład z meczu zaplanowanego „%1$s”?</string>
+    <string name="decline_planned">Nie łącz</string>
+    <string name="take_from_planned">Weź z meczu zaplanowanego</string>
+    <string name="planned_choice">%1$s · %2$s</string>
     <string name="take_over_planned">Połącz</string>
     <string name="take_over_planned_title">Połącz z meczem zaplanowanym</string>
     <string name="take_over_planned_text">Ten mecz przejmie nazwy drużyn i składy wybranego meczu, a mecz zaplanowany zniknie z listy.</string>

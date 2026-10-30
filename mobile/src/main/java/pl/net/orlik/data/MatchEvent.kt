@@ -10,7 +10,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import pl.net.orlik.review.PlannedMatch
 import pl.net.orlik.shared.EventType
 
 enum class Team { HOME, AWAY }
@@ -181,24 +180,6 @@ interface MatchEventDao {
     @Query("SELECT EXISTS(SELECT 1 FROM events WHERE id = :id)")
     suspend fun exists(id: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM matches WHERE id = :matchId)")
-    suspend fun matchExists(matchId: String): Boolean
-
-    /**
-     * Planned matches without events yet; one with neither team names nor players plans nothing,
-     * and one typed in from notes is no longer planned.
-     */
-    @Query(
-        """
-        SELECT id, planned_at AS plannedAt FROM matches m
-        WHERE planned_at IS NOT NULL AND played_at IS NULL
-            AND NOT EXISTS (SELECT 1 FROM events e WHERE e.match_id = m.id)
-            AND (home_team IS NOT NULL OR away_team IS NOT NULL
-                OR EXISTS (SELECT 1 FROM lineup_players p WHERE p.match_id = m.id))
-        """,
-    )
-    suspend fun plannedMatches(): List<PlannedMatch>
-
     @Query(
         """
         UPDATE matches SET home_team = (SELECT home_team FROM matches WHERE id = :plannedId),
@@ -212,8 +193,8 @@ interface MatchEventDao {
     suspend fun moveLineup(plannedId: String, matchId: String)
 
     /**
-     * A match from the watch takes the team names and lineups of a planned match, which goes: on
-     * its first sync, or chosen later in its review.
+     * A match from the watch takes the team names and lineups of a planned match, which goes:
+     * joined in its review or its lineups.
      */
     @Transaction
     suspend fun takeOverPlanned(plannedId: String, matchId: String) {

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import pl.net.orlik.audio.AudioDurations
 import pl.net.orlik.audio.AudioLevels
 import pl.net.orlik.audio.AudioPlayer
+import pl.net.orlik.data.DeclinedPlans
 import pl.net.orlik.data.Match
 import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.MatchListItem
@@ -31,6 +32,8 @@ import pl.net.orlik.export.matchExportOf
 import pl.net.orlik.review.MatchReview
 import pl.net.orlik.review.matchReviewOf
 import pl.net.orlik.review.plannedChoices
+import pl.net.orlik.review.plannedOnTheDay
+import java.time.ZoneId
 import pl.net.orlik.stt.Transcriber
 import pl.net.orlik.stt.TranscriptionStatus
 
@@ -44,7 +47,10 @@ data class MatchReviewUiState(
     /** Event whose recording is playing. */
     val playingId: String? = null,
     val stt: SttUiState = SttUiState(),
-    /** Planned matches this match can take its lineups from; empty once it has any. */
+    /**
+     * Planned matches for the day this match from the watch started, offered over the list; empty
+     * once it has a lineup or "Nie łącz" was chosen.
+     */
     val planned: List<MatchListItem> = emptyList(),
 )
 
@@ -64,6 +70,7 @@ class MatchReviewViewModel(
     transcripts: TranscriptDao,
     private val transcriber: Transcriber,
     private val recordingsDir: File,
+    private val declinedPlans: DeclinedPlans,
 ) : ViewModel() {
 
     private val player = AudioPlayer(viewModelScope)
@@ -101,7 +108,9 @@ class MatchReviewViewModel(
         SttUiState(available, untranscribed, if (ours) status else TranscriptionStatus.Idle)
     }
 
-    private val sttAndPlanned = combine(stt, dao.matches()) { stt, matches -> stt to plannedChoices(matches, matchId) }
+    private val sttAndPlanned = combine(stt, dao.matches(), declinedPlans.matchIds) { stt, matches, declined ->
+        stt to if (matchId in declined) emptyList() else plannedChoices(matches, matchId)
+    }
 
     val state: StateFlow<MatchReviewUiState> = combine(
         dao.match(matchId),
@@ -109,15 +118,16 @@ class MatchReviewViewModel(
         durations,
         player.playingId,
         sttAndPlanned,
-    ) { match, list, durations, playingId, (stt, planned) ->
+    ) { match, list, durations, playingId, (stt, choices) ->
+        val startedAt = list.mapNotNull { it.recordedAt }.minOrNull()
         MatchReviewUiState(
             match = match,
-            startedAt = list.mapNotNull { it.recordedAt }.minOrNull() ?: match?.playedAt,
+            startedAt = startedAt ?: match?.playedAt,
             review = matchReviewOf(list),
             durations = durations,
             playingId = playingId,
             stt = stt,
-            planned = planned,
+            planned = startedAt?.let { plannedOnTheDay(choices, it, ZoneId.systemDefault()) }.orEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchReviewUiState())
 
@@ -139,6 +149,9 @@ class MatchReviewViewModel(
         }
     }
 
+    /** "Nie łącz": the planned matches of the day are not offered again. */
+    fun declinePlanned() = declinedPlans.decline(matchId)
+
     /** The match as it is now, for "Udostępnij". */
     suspend fun export(): MatchExport = matchExportOf(dao.match(matchId).first() ?: Match(matchId), events.first())
 
@@ -150,7 +163,7 @@ class MatchReviewViewModel(
         fun factory(app: Application, matchId: String): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val db = PhoneDatabase.get(app)
-                MatchReviewViewModel(matchId, db.matchEventDao(), db.transcriptDao(), Transcriber.get(app), recordingsDir(app))
+                MatchReviewViewModel(matchId, db.matchEventDao(), db.transcriptDao(), Transcriber.get(app), recordingsDir(app), DeclinedPlans.get(app))
             }
         }
     }
