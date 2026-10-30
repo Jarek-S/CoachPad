@@ -66,6 +66,8 @@ import pl.net.orlik.data.MatchListItem
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.deleteMatch
 import pl.net.orlik.data.recordingsDir
+import pl.net.orlik.review.dayStartOf
+import java.time.ZoneId
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.theme.GreenDark
@@ -92,11 +94,11 @@ class MatchesViewModel(
         MatchesUiState(list, summary?.matches?.size ?: 0)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MatchesUiState())
 
-    /** Creates a match planned before kickoff and passes its id on, to open its lineups. */
-    fun plan(onPlanned: (String) -> Unit) {
+    /** Creates a match planned for the chosen day and passes its id on, to open its lineups. */
+    fun plan(utcDayMillis: Long, onPlanned: (String) -> Unit) {
         viewModelScope.launch {
             val id = UUID.randomUUID().toString()
-            dao.insertMatch(Match(id, plannedAt = System.currentTimeMillis()))
+            dao.insertMatch(Match(id, plannedAt = dayStartOf(utcDayMillis, ZoneId.systemDefault())))
             onPlanned(id)
         }
     }
@@ -125,11 +127,24 @@ fun MatchesScreen(
     onOpenMatch: (String) -> Unit,
     onOpenPlanned: (String) -> Unit,
     onOpenLive: (String) -> Unit,
-    onNewMatch: () -> Unit,
+    onNewMatch: (utcDayMillis: Long) -> Unit,
     onOpenSync: () -> Unit,
     onOpenSettings: () -> Unit,
     onDeleteMatch: (String) -> Unit,
 ) {
+    // "Nowy mecz" asks for the match day first
+    var choosingDate by rememberSaveable { mutableStateOf(false) }
+    if (choosingDate) {
+        MatchDayDialog(
+            initialMillis = null,
+            confirmLabel = stringResource(R.string.next),
+            onConfirm = {
+                choosingDate = false
+                onNewMatch(it)
+            },
+            onDismiss = { choosingDate = false },
+        )
+    }
     var toDelete by rememberSaveable { mutableStateOf<String?>(null) }
     state.matches?.firstOrNull { it.matchId == toDelete }?.let { match ->
         DeleteMatchDialog(match, onConfirm = { onDeleteMatch(match.matchId); toDelete = null }, onDismiss = { toDelete = null })
@@ -155,7 +170,7 @@ fun MatchesScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onNewMatch,
+                onClick = { choosingDate = true },
                 icon = { Icon(painterResource(R.drawable.ic_add), null) },
                 text = { Text(stringResource(R.string.new_match)) },
             )
@@ -290,10 +305,13 @@ private fun DeleteMatchDialog(match: MatchListItem, onConfirm: () -> Unit, onDis
     )
 }
 
-/** The match's start, or "Zaplanowany" before kickoff. */
+/** The match's start, or "Zaplanowany · sobota, 31 października" before kickoff. */
 @Composable
-private fun matchWhen(match: MatchListItem): String =
-    match.startedAt?.let { formatMatchWhen(it, match.fromNotes) } ?: stringResource(R.string.planned_match)
+private fun matchWhen(match: MatchListItem): String = when {
+    match.startedAt != null -> formatMatchWhen(match.startedAt, match.fromNotes)
+    match.plannedAt != null -> stringResource(R.string.planned_on, formatMatchDay(match.plannedAt))
+    else -> stringResource(R.string.planned_match)
+}
 
 @Preview
 @Composable
@@ -302,7 +320,7 @@ private fun MatchesScreenPreview() {
         MatchesScreen(
             state = MatchesUiState(
                 matches = listOf(
-                    MatchListItem("p1", "Orły", "Sokoły", null, toReview = 0, recordings = 0, players = 14),
+                    MatchListItem("p1", "Orły", "Sokoły", null, toReview = 0, recordings = 0, players = 14, plannedAt = 1_793_400_000_000),
                     MatchListItem("m1", "Orły", "Rywale FC", 1_791_800_000_000, toReview = 3, recordings = 12, homeGoals = 1),
                     MatchListItem("m2", null, null, 1_791_200_000_000, toReview = 0, recordings = 4, homeGoals = 3, awayGoals = 1),
                 ),

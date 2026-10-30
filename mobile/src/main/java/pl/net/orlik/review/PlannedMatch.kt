@@ -32,12 +32,16 @@ fun plannedChoices(matches: List<MatchListItem>, matchId: String): List<MatchLis
 private val MatchListItem.hasLineup: Boolean get() = homeTeam != null || awayTeam != null || players > 0
 
 /**
- * When a match typed in from notes was played: the start of the chosen day in [zone]. The date
- * picker gives the day as UTC midnight, [utcDayMillis].
+ * The start of a day chosen in the date picker, which gives it as UTC midnight, [utcDayMillis]:
+ * the day of a planned match, or when one typed in from notes was played.
  */
-fun playedAtOf(utcDayMillis: Long, zone: ZoneId): Long =
+fun dayStartOf(utcDayMillis: Long, zone: ZoneId): Long =
     Instant.ofEpochMilli(utcDayMillis).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
 
-/** Today as the date picker counts days: UTC midnight of today's date in [zone]. */
-fun todayUtcMillis(nowMillis: Long, zone: ZoneId): Long =
-    Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+/** The day of [epochMillis] in [zone] as the date picker counts days: UTC midnight of that date. */
+fun utcDayOf(epochMillis: Long, zone: ZoneId): Long =
+    Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+/** A match planned for a day after today: it cannot be typed in from notes yet. */
+fun isPlannedLater(plannedAt: Long, nowMillis: Long, zone: ZoneId): Boolean =
+    utcDayOf(plannedAt, zone) > utcDayOf(nowMillis, zone)

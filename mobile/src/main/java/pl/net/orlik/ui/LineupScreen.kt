@@ -1,6 +1,7 @@
 package pl.net.orlik.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +23,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,7 +59,7 @@ import pl.net.orlik.data.Team
 import pl.net.orlik.review.PlayerEntry
 import pl.net.orlik.review.parsePlayerEntry
 import pl.net.orlik.review.playerEntryText
-import pl.net.orlik.review.todayUtcMillis
+import pl.net.orlik.review.isPlannedLater
 import java.time.ZoneId
 import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
@@ -87,19 +84,24 @@ fun LineupScreen(
     onAddPlayer: (Team, PlayerEntry) -> Unit,
     onUpdatePlayer: (id: Long, PlayerEntry) -> Unit,
     onRemovePlayer: (id: Long) -> Unit,
-    onEnterFromNotes: (utcDayMillis: Long) -> Unit,
+    onPlannedDay: (utcDayMillis: Long) -> Unit,
+    onEnterFromNotes: () -> Unit,
     onStartMatch: () -> Unit,
 ) {
     var choosingDate by rememberSaveable { mutableStateOf(false) }
     if (choosingDate) {
-        PlayedOnDialog(
+        MatchDayDialog(
+            initialMillis = state.match?.plannedAt,
+            confirmLabel = stringResource(R.string.save),
             onConfirm = {
                 choosingDate = false
-                onEnterFromNotes(it)
+                onPlannedDay(it)
             },
             onDismiss = { choosingDate = false },
         )
     }
+    // Only before kickoff: a planned match is recorded one way or another (design doc, section 3.3)
+    val plannedAt = state.match?.takeIf { it.playedAt == null && state.startedAt == null }?.plannedAt
     var team by rememberSaveable { mutableStateOf(Team.HOME) }
     var editingId by rememberSaveable { mutableStateOf<Long?>(null) }
     state.players.values.flatten().firstOrNull { it.id == editingId }?.let { player ->
@@ -126,28 +128,51 @@ fun LineupScreen(
                 title = {
                     Column {
                         Text(stringResource(R.string.lineup_title))
-                        val subtitle = state.startedAt?.let { formatMatchWhen(it, state.match?.playedAt != null) }
-                            ?: state.match?.plannedAt?.let { stringResource(R.string.planned_match) }
-                        subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted) }
+                        if (plannedAt != null) {
+                            // The planned day, tapped to change it
+                            Row(
+                                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.change_match_day)) { choosingDate = true },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.planned_on, formatMatchDay(plannedAt)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = OnStadiumMuted,
+                                )
+                                Icon(painterResource(R.drawable.ic_calendar), null, Modifier.size(16.dp), tint = OnStadiumMuted)
+                            }
+                        } else {
+                            state.startedAt?.let {
+                                Text(formatMatchWhen(it, state.match?.playedAt != null), style = MaterialTheme.typography.bodyMedium, color = OnStadiumMuted)
+                            }
+                        }
                     }
                 },
             )
         },
         bottomBar = {
-            // Only before kickoff: a planned match is recorded one way or another (design doc, section 3.3)
-            val match = state.match
-            if (match != null && match.plannedAt != null && match.playedAt == null && state.startedAt == null) {
+            if (plannedAt != null) {
+                // A match is typed in from notes once its day has come
+                val plannedLater = isPlannedLater(plannedAt, System.currentTimeMillis(), ZoneId.systemDefault())
                 GlassPanel(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (plannedLater) {
+                            Text(stringResource(R.string.planned_later), style = MaterialTheme.typography.bodyMedium, color = OnStadiumHint)
+                        }
                         // One live match on the phone at a time
                         if (state.otherMatchLive) {
                             Text(stringResource(R.string.other_match_live), style = MaterialTheme.typography.bodyMedium, color = OnStadiumHint)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedButton(
-                                onClick = { choosingDate = true },
+                                onClick = onEnterFromNotes,
+                                enabled = !plannedLater,
                                 modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = OnStadium),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = OnStadium,
+                                    disabledContentColor = OnStadium.copy(alpha = 0.5f),
+                                ),
                                 border = BorderStroke(1.dp, GlassBorder),
                             ) {
                                 Text(stringResource(R.string.enter_from_notes))
@@ -193,30 +218,6 @@ fun LineupScreen(
                 )
             }
         }
-    }
-}
-
-/** "Data meczu": today to start with, no day after it (a match from notes has been played). */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PlayedOnDialog(onConfirm: (utcDayMillis: Long) -> Unit, onDismiss: () -> Unit) {
-    val today = todayUtcMillis(System.currentTimeMillis(), ZoneId.systemDefault())
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = today,
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= today
-        },
-    )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { picker.selectedDateMillis?.let(onConfirm) }, enabled = picker.selectedDateMillis != null) {
-                Text(stringResource(R.string.enter_from_notes))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    ) {
-        DatePicker(state = picker, title = { Text(stringResource(R.string.played_on), Modifier.padding(start = 24.dp, top = 16.dp)) })
     }
 }
 
@@ -412,6 +413,7 @@ private fun LineupScreenPreview() {
             onAddPlayer = { _, _ -> },
             onUpdatePlayer = { _, _ -> },
             onRemovePlayer = {},
+            onPlannedDay = {},
             onEnterFromNotes = {},
             onStartMatch = {},
         )

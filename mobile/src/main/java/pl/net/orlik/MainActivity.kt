@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
                                 onOpenMatch = { navController.navigate("$MATCH/$it") },
                                 onOpenPlanned = { navController.navigate("$MATCH/$it/$LINEUP") },
                                 onOpenLive = { navController.navigate("$MATCH/$it/$LIVE") },
-                                onNewMatch = { viewModel.plan { navController.navigate("$MATCH/$it/$LINEUP") } },
+                                onNewMatch = { day -> viewModel.plan(day) { navController.navigate("$MATCH/$it/$LINEUP") } },
                                 onOpenSync = { navController.navigate(SYNC) },
                                 onOpenSettings = { navController.navigate(SETTINGS) },
                                 onDeleteMatch = viewModel::delete,
@@ -187,8 +187,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
-                                onEnterFromNotes = { day ->
-                                    viewModel.enterFromNotes(day) {
+                                onPlannedDay = viewModel::setPlannedDay,
+                                onEnterFromNotes = {
+                                    viewModel.enterFromNotes {
                                         // The review takes the lineup's place, with the first event open over it
                                         navController.navigate("$MATCH/$matchId") {
                                             popUpTo("$MATCH/{$MATCH_ID}/$LINEUP") { inclusive = true }

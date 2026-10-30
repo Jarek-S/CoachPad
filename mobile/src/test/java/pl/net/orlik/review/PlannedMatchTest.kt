@@ -1,7 +1,9 @@
 package pl.net.orlik.review
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -53,17 +55,36 @@ class PlannedMatchTest {
     }
 
     @Test
-    fun playedAt_isTheStartOfTheChosenDayInTheZone() {
+    fun dayStart_isTheStartOfTheChosenDayInTheZone() {
         val warsaw = ZoneId.of("Europe/Warsaw")
         val picked = LocalDate.of(2026, 10, 30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(warsaw).toInstant().toEpochMilli(), playedAtOf(picked, warsaw))
+        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(warsaw).toInstant().toEpochMilli(), dayStartOf(picked, warsaw))
     }
 
     @Test
-    fun today_isTheLocalDateAsUtcMidnight() {
+    fun utcDay_isTheLocalDateAsUtcMidnight() {
         val warsaw = ZoneId.of("Europe/Warsaw")
         // 00:30 in Warsaw is still the previous day in UTC
         val now = LocalDateTime.of(2026, 10, 30, 0, 30).atZone(warsaw).toInstant().toEpochMilli()
-        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(), todayUtcMillis(now, warsaw))
+        assertEquals(LocalDate.of(2026, 10, 30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(), utcDayOf(now, warsaw))
+    }
+
+    @Test
+    fun utcDay_ofADayStart_isThePickedDay() {
+        val warsaw = ZoneId.of("Europe/Warsaw")
+        val picked = LocalDate.of(2026, 11, 7).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        assertEquals(picked, utcDayOf(dayStartOf(picked, warsaw), warsaw))
+    }
+
+    @Test
+    fun plannedLater_onlyForADayAfterToday() {
+        val warsaw = ZoneId.of("Europe/Warsaw")
+        val now = LocalDateTime.of(2026, 10, 30, 23, 50).atZone(warsaw).toInstant().toEpochMilli()
+        fun day(d: Int) = LocalDate.of(2026, 10, d).atStartOfDay(warsaw).toInstant().toEpochMilli()
+        assertFalse(isPlannedLater(day(29), now, warsaw))
+        assertFalse(isPlannedLater(day(30), now, warsaw))
+        assertTrue(isPlannedLater(day(31), now, warsaw))
+        // A plan made before dates were chosen holds the moment it was created
+        assertFalse(isPlannedLater(now - 60_000, now, warsaw))
     }
 }

@@ -23,7 +23,7 @@ import pl.net.orlik.review.LiveAction
 import pl.net.orlik.review.PlayerEntry
 import java.time.ZoneId
 import pl.net.orlik.review.lineupOrder
-import pl.net.orlik.review.playedAtOf
+import pl.net.orlik.review.dayStartOf
 import pl.net.orlik.review.teamNameOf
 
 data class LineupUiState(
@@ -88,10 +88,15 @@ class LineupViewModel(
         }
     }
 
-    /** "Wpisz z notatek": the match was played on the chosen day; [then] opens it to type events in. */
-    fun enterFromNotes(utcDayMillis: Long, then: () -> Unit) {
+    /** The day the planned match is for, chosen in its header. */
+    fun setPlannedDay(utcDayMillis: Long) {
+        viewModelScope.launch { lineup.setPlannedAt(matchId, dayStartOf(utcDayMillis, ZoneId.systemDefault())) }
+    }
+
+    /** "Wpisz z notatek": the match was played on the day it was planned for; [then] opens it to type events in. */
+    fun enterFromNotes(then: () -> Unit) {
         viewModelScope.launch {
-            lineup.setPlayedAt(matchId, playedAtOf(utcDayMillis, ZoneId.systemDefault()))
+            lineup.setPlayedOnPlannedDay(matchId)
             then()
         }
     }

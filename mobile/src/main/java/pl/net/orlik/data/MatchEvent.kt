@@ -160,6 +160,8 @@ data class MatchListItem(
     val fromNotes: Boolean = false,
     /** Recorded live on the phone and not ended yet: it opens on the match screen. */
     val live: Boolean = false,
+    /** The day a match planned on the phone is planned for; null for one from the watch. */
+    val plannedAt: Long? = null,
 ) {
     /** Planned on the phone, nothing from the watch yet. */
     val isPlanned: Boolean get() = startedAt == null
@@ -232,10 +234,10 @@ interface MatchEventDao {
     @Query(LIVE_MATCH)
     fun liveMatchId(): Flow<String?>
 
-    /** Matches on the phone: planned ones first, then newest first. */
+    /** Matches on the phone: planned ones first, the soonest first, then newest first. */
     @Query(
         """
-        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals, fromNotes, live FROM (
+        SELECT matchId, homeTeam, awayTeam, startedAt, toReview, recordings, players, homeGoals, awayGoals, fromNotes, live, plannedAt FROM (
             SELECT m.id AS matchId, m.home_team AS homeTeam, m.away_team AS awayTeam, m.planned_at AS plannedAt,
                 m.played_at IS NOT NULL AS fromNotes,
                 COALESCE(m.id = ($LIVE_MATCH), 0) AS live,
@@ -248,7 +250,7 @@ interface MatchEventDao {
                 (SELECT COUNT(*) FROM events g WHERE g.match_id = m.id AND g.team = 'AWAY' AND $COUNTED_GOAL) AS awayGoals
             FROM matches m
         )
-        ORDER BY startedAt IS NOT NULL, COALESCE(startedAt, plannedAt) DESC
+        ORDER BY startedAt IS NOT NULL, CASE WHEN startedAt IS NULL THEN plannedAt END, startedAt DESC
         """,
     )
     fun matches(): Flow<List<MatchListItem>>
