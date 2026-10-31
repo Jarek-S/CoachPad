@@ -71,7 +71,7 @@ import pl.net.orlik.shared.EventType
 import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.LiveClock
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.Microphone
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.OnStadiumHint
@@ -334,7 +334,7 @@ private fun LiveButtons(paused: Boolean, onPause: () -> Unit, onResume: () -> Un
 @Preview
 @Composable
 private fun LiveMatchScreenPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         LiveMatchScreen(
             state = LiveMatchUiState(
                 match = Match("m", homeTeam = "Orły", awayTeam = "Rywale FC"),

@@ -68,7 +68,7 @@ import pl.net.orlik.ui.theme.Green
 import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.Ink
 import pl.net.orlik.ui.theme.InkMuted
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.OnStadiumMuted
 import pl.net.orlik.ui.theme.Outline
@@ -418,7 +418,7 @@ private fun PlayerDialog(player: LineupPlayer, onSave: (PlayerEntry) -> Unit, on
 @Composable
 private fun LineupScreenPreview() {
     fun player(id: Long, number: Int?, name: String) = LineupPlayer(id, "m", Team.HOME, number, name)
-    MatchNotesTheme {
+    CoachPadTheme {
         LineupScreen(
             state = LineupUiState(
                 match = Match("m", homeTeam = "Orły", awayTeam = "Rywale FC"),

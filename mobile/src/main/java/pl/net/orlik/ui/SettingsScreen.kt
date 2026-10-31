@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import pl.net.orlik.R
 import pl.net.orlik.ui.theme.Disallowed
 import pl.net.orlik.ui.theme.GreenDark
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.ReviewText
 import pl.net.orlik.ui.theme.stadiumTopAppBarColors
@@ -215,7 +215,7 @@ private fun clipboardText(context: Context): String? =
 @Preview(showBackground = true, backgroundColor = 0xFF061430, widthDp = 390, heightDp = 600)
 @Composable
 private fun SettingsScreenPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         SettingsScreen(
             state = SettingsUiState(sttEnabled = true, savedKey = "sk-…a1B2", message = KeyMessage.WORKS),
             onBack = {},

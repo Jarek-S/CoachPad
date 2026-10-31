@@ -71,7 +71,7 @@ import java.time.ZoneId
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.QueueSummarySource
 import pl.net.orlik.ui.theme.GreenDark
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.ReviewBadge
 import pl.net.orlik.ui.theme.ReviewText
@@ -316,7 +316,7 @@ private fun matchWhen(match: MatchListItem): String = when {
 @Preview
 @Composable
 private fun MatchesScreenPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         MatchesScreen(
             state = MatchesUiState(
                 matches = listOf(

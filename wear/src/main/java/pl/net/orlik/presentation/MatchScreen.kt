@@ -50,7 +50,7 @@ import java.util.Date
 import kotlinx.coroutines.delay
 import pl.net.orlik.R
 import pl.net.orlik.data.ActiveMatch
-import pl.net.orlik.presentation.theme.MatchNotesTheme
+import pl.net.orlik.presentation.theme.CoachPadTheme
 import pl.net.orlik.presentation.theme.MatchTimeColor
 import pl.net.orlik.presentation.theme.MicColor
 import pl.net.orlik.presentation.theme.RecordingColor
@@ -392,7 +392,7 @@ private fun SmallIcon(@DrawableRes iconRes: Int, contentDescription: String) {
 @WearPreviewDevices
 @Composable
 fun NoMatchPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         MatchScreen(
             MatchUiState.NoMatch,
             onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},
@@ -404,7 +404,7 @@ fun NoMatchPreview() {
 @Composable
 fun InProgressPreview() {
     val match = ActiveMatch(matchId = "preview", startedAt = System.currentTimeMillis() - 34 * 60_000)
-    MatchNotesTheme {
+    CoachPadTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
             onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},
@@ -420,7 +420,7 @@ fun ShiftAlarmPreview() {
         startedAt = System.currentTimeMillis() - 39 * 60_000,
         shiftTimer = ShiftTimer(intervalMillis = 5 * 60_000L, lastResetPlayMillis = 33 * 60_000L),
     )
-    MatchNotesTheme {
+    CoachPadTheme {
         MatchScreen(
             MatchUiState.InProgress(match),
             onStartMatch = {}, onOpenSettings = {}, onToggleRecording = {}, onConfirmShift = {}, onToggleShiftTimer = {}, onTogglePause = {}, onEndMatch = {},

@@ -93,7 +93,7 @@ import pl.net.orlik.review.needsTeam
 import pl.net.orlik.shared.EventType
 import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.OnStadiumHint
 import pl.net.orlik.ui.theme.OnStadiumMuted
@@ -610,7 +610,7 @@ private fun EditButtons(
 @Preview
 @Composable
 private fun EventEditScreenPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         EventEditScreen(
             state = EventEditUiState(
                 match = Match("m1", "Orły", "Rywale FC"),

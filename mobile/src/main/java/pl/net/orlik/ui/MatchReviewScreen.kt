@@ -76,7 +76,7 @@ import pl.net.orlik.ui.theme.GlassBorder
 import pl.net.orlik.ui.theme.GlassPanel
 import pl.net.orlik.ui.theme.GreenDark
 import pl.net.orlik.ui.theme.GreenLight
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.OnStadiumHint
 import pl.net.orlik.ui.theme.OnStadiumMuted
@@ -496,7 +496,7 @@ private fun PlayButton(playing: Boolean, filled: Boolean, onClick: () -> Unit) {
 private fun MatchReviewScreenPreview() {
     fun row(id: String, minute: Int, type: EventType?, team: Team? = null, note: String? = null, hint: ReviewHint? = null) =
         ReviewRow(id, minute * 60_000L + 12_000, type, team, note, if (type?.isStructural == true) null else "$id.m4a", hint)
-    MatchNotesTheme {
+    CoachPadTheme {
         MatchReviewScreen(
             state = MatchReviewUiState(
                 match = Match("m1", "Orły", "Rywale FC"),

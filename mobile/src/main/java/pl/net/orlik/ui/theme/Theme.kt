@@ -26,7 +26,7 @@ private val LightColorScheme = lightColorScheme(
  * instead of wallpaper-based dynamic color, so the green stays recognisable.
  */
 @Composable
-fun MatchNotesTheme(content: @Composable () -> Unit) {
+fun CoachPadTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = LightColorScheme,
         typography = Typography,

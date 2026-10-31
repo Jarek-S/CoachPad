@@ -38,7 +38,7 @@ import pl.net.orlik.R
 import pl.net.orlik.shared.sync.PendingMatch
 import pl.net.orlik.shared.sync.QueueSummary
 import pl.net.orlik.sync.SyncStatus
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.OnStadium
 import pl.net.orlik.ui.theme.stadiumTopAppBarColors
 
@@ -210,7 +210,7 @@ private fun DeleteMatchDialog(match: PendingMatch, onConfirm: () -> Unit, onDism
 @Preview(showBackground = true)
 @Composable
 private fun SyncScreenPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         SyncScreen(
             state = SyncUiState(
                 watch = WatchQueue.Known(

@@ -52,7 +52,7 @@ import pl.net.orlik.ui.SettingsScreen
 import pl.net.orlik.ui.SettingsViewModel
 import pl.net.orlik.ui.SyncScreen
 import pl.net.orlik.ui.SyncViewModel
-import pl.net.orlik.ui.theme.MatchNotesTheme
+import pl.net.orlik.ui.theme.CoachPadTheme
 import pl.net.orlik.ui.theme.StadiumBackground
 
 class MainActivity : ComponentActivity() {
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         // Audio of recordings deleted while the app last closed with "Cofnij" still offered
         lifecycleScope.launch { edits.purgeAll() }
         setContent {
-            MatchNotesTheme {
+            CoachPadTheme {
                 // Above all screens, so "Cofnij" stays when the edit screen returns to the list
                 val snackbar = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()

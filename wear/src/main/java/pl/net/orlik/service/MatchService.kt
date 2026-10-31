@@ -70,7 +70,7 @@ class MatchService : Service() {
     override fun onCreate() {
         super.onCreate()
         wakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MatchNotes:shiftAlarm")
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CoachPad:shiftAlarm")
             .apply { setReferenceCounted(false) }
     }
 

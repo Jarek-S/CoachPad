@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.wear.compose.material3.MaterialTheme
 
 @Composable
-fun MatchNotesTheme(
+fun CoachPadTheme(
     content: @Composable () -> Unit
 ) {
     /**

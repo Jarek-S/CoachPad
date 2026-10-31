@@ -22,7 +22,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MatchNotes"
+rootProject.name = "CoachPad"
 include(":mobile")
 include(":wear")
 include(":shared")

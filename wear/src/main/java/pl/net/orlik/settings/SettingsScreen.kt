@@ -24,7 +24,7 @@ import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import pl.net.orlik.R
-import pl.net.orlik.presentation.theme.MatchNotesTheme
+import pl.net.orlik.presentation.theme.CoachPadTheme
 import pl.net.orlik.presentation.theme.SmallLabelColor
 
 /** Settings list; swipe right to go back. */
@@ -94,7 +94,7 @@ private fun StepButton(@DrawableRes iconRes: Int, descriptionRes: Int, enabled: 
 @WearPreviewDevices
 @Composable
 fun SettingsPreview() {
-    MatchNotesTheme {
+    CoachPadTheme {
         SettingsScreen(ShiftTimerSettings(enabled = true), onShiftTimerEnabledChange = {}, onIntervalChange = {})
     }
 }
