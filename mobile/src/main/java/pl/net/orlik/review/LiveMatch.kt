@@ -1,6 +1,7 @@
 package pl.net.orlik.review
 
 import pl.net.orlik.data.MatchEvent
+import pl.net.orlik.export.Score
 import pl.net.orlik.data.Team
 import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.shared.EventType
@@ -67,9 +68,35 @@ enum class QuickEvent(val type: EventType, val team: Team?) {
 }
 
 /**
- * Whether an event from a quick button is complete enough to count at once: a goal is (it knows its
- * team), a card once its team is chosen, a note once something is written. Otherwise it waits under
- * "Do przejrzenia".
+ * Whether an event from a quick button is complete enough to be confirmed at once: a goal once its
+ * scorer is chosen, a card once its team is, a note once something is written. Otherwise it waits
+ * under "Do przejrzenia".
  */
 fun quickConfirms(draft: EventDraft): Boolean =
-    draft.canConfirm && (draft.type != EventType.NOTE || draft.storedNote != null)
+    draft.canConfirm && when (draft.type) {
+        EventType.GOAL -> draft.storedPlayer != null
+        EventType.NOTE -> draft.storedNote != null
+        else -> true
+    }
+
+/** The score on the match screen; [provisional] while a counted goal waits under "Do przejrzenia". */
+data class LiveScore(val score: Score = Score(0, 0), val provisional: Boolean = false)
+
+/**
+ * The score on the match screen: a goal with its team counts at once, also one still waiting for
+ * its scorer; one cancelled by a confirmed disallowed goal does not. The match list and the export
+ * count only confirmed goals.
+ */
+fun liveScoreOf(events: List<MatchEvent>): LiveScore {
+    val cancelled = events
+        .filter { it.type == EventType.GOAL_DISALLOWED && it.status == ReviewStatus.CONFIRMED }
+        .mapNotNull { it.linkedGoalEventId }
+        .toSet()
+    val goals = events.filter {
+        it.type == EventType.GOAL && it.team != null && it.status != ReviewStatus.DELETED && it.id !in cancelled
+    }
+    return LiveScore(
+        score = Score(goals.count { it.team == Team.HOME }, goals.count { it.team == Team.AWAY }),
+        provisional = goals.any { it.status != ReviewStatus.CONFIRMED },
+    )
+}

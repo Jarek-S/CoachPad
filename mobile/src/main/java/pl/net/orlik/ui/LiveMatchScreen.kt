@@ -63,6 +63,7 @@ import pl.net.orlik.data.Match
 import pl.net.orlik.data.Team
 import pl.net.orlik.export.Score
 import pl.net.orlik.review.LiveMatch
+import pl.net.orlik.review.LiveScore
 import pl.net.orlik.review.LiveStatus
 import pl.net.orlik.review.QuickEvent
 import pl.net.orlik.review.formatEventTime
@@ -194,9 +195,9 @@ private fun PlayClock(live: LiveMatch, now: () -> Long) {
 
 private const val CLOCK_TICK_MILLIS = 200L
 
-/** "Orły 2:1 Rywale FC": counted goals, as on the match list. */
+/** "Orły 2:1 Rywale FC"; muted while a counted goal waits for its scorer under "Do przejrzenia". */
 @Composable
-private fun ScoreLine(score: Score, match: Match?) {
+private fun ScoreLine(score: LiveScore, match: Match?) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             teamName(Team.HOME, match?.homeTeam, match?.awayTeam),
@@ -206,7 +207,12 @@ private fun ScoreLine(score: Score, match: Match?) {
             overflow = TextOverflow.Ellipsis,
             color = OnStadiumMuted,
         )
-        Text(stringResource(R.string.match_score, score.home, score.away), fontSize = 32.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            stringResource(R.string.match_score, score.score.home, score.score.away),
+            fontSize = 32.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (score.provisional) OnStadiumMuted else Color.Unspecified,
+        )
         Text(
             teamName(Team.AWAY, match?.homeTeam, match?.awayTeam),
             modifier = Modifier.weight(1f),
@@ -333,7 +339,7 @@ private fun LiveMatchScreenPreview() {
             state = LiveMatchUiState(
                 match = Match("m", homeTeam = "Orły", awayTeam = "Rywale FC"),
                 live = LiveMatch(LiveStatus.RUNNING, startedAt = 0),
-                score = Score(2, 1),
+                score = LiveScore(Score(2, 1)),
             ),
             onBack = {},
             onPause = {},

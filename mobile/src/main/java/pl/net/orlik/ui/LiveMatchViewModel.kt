@@ -25,14 +25,14 @@ import pl.net.orlik.data.MatchEventDao
 import pl.net.orlik.data.PhoneDatabase
 import pl.net.orlik.data.Team
 import pl.net.orlik.data.recordingsDir
-import pl.net.orlik.export.Score
-import pl.net.orlik.export.matchExportOf
 import pl.net.orlik.review.EventDraft
 import pl.net.orlik.review.LiveAction
 import pl.net.orlik.review.LiveMatch
+import pl.net.orlik.review.LiveScore
 import pl.net.orlik.review.QuickEvent
 import pl.net.orlik.review.lineupOrder
 import pl.net.orlik.review.liveMatchOf
+import pl.net.orlik.review.liveScoreOf
 import pl.net.orlik.review.quickConfirms
 import pl.net.orlik.stt.Transcriber
 import pl.net.orlik.shared.EventType
@@ -44,8 +44,7 @@ data class LiveMatchUiState(
     val match: Match? = null,
     /** Null while loading. */
     val live: LiveMatch? = null,
-    /** Counted goals so far, as in the export. */
-    val score: Score = Score(0, 0),
+    val score: LiveScore = LiveScore(),
     val lineup: Map<Team, List<LineupPlayer>> = emptyMap(),
     /** The event whose details are being filled in; null when the sheet is closed. */
     val editing: QuickEdit? = null,
@@ -87,7 +86,7 @@ class LiveMatchViewModel(
         LiveMatchUiState(
             match = match,
             live = liveMatchOf(events),
-            score = match?.let { matchExportOf(it, events).score } ?: Score(0, 0),
+            score = liveScoreOf(events),
             lineup = players.sortedWith(lineupOrder).groupBy { it.team },
             editing = edit,
             recordingSince = voice?.startedAt,

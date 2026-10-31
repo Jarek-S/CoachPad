@@ -8,6 +8,7 @@ import org.junit.Test
 import pl.net.orlik.data.MatchEvent
 import pl.net.orlik.data.ReviewStatus
 import pl.net.orlik.data.Team
+import pl.net.orlik.export.Score
 import pl.net.orlik.shared.EventType
 
 class LiveMatchTest {
@@ -68,10 +69,39 @@ class LiveMatchTest {
 
     @Test
     fun quickEvents_confirmOnceComplete() {
-        assertTrue(quickConfirms(EventDraft(EventType.GOAL, Team.HOME)))
+        assertFalse(quickConfirms(EventDraft(EventType.GOAL, Team.HOME)))
+        assertFalse(quickConfirms(EventDraft(EventType.GOAL, Team.HOME, player = " ")))
+        assertTrue(quickConfirms(EventDraft(EventType.GOAL, Team.HOME, player = "7 Marcin")))
         assertFalse(quickConfirms(EventDraft(EventType.YELLOW_CARD)))
         assertTrue(quickConfirms(EventDraft(EventType.RED_CARD, Team.AWAY)))
         assertFalse(quickConfirms(EventDraft(EventType.NOTE, note = " ")))
         assertTrue(quickConfirms(EventDraft(EventType.NOTE, note = "Zmiana")))
+    }
+
+    private fun goal(id: String, team: Team, status: ReviewStatus) =
+        MatchEvent(id, "m", 1_000, EventType.GOAL, null, 0, team = team, status = status)
+
+    @Test
+    fun liveScore_countsGoalsWaitingForTheirScorer() {
+        val score = liveScoreOf(
+            listOf(
+                goal("h1", Team.HOME, ReviewStatus.CONFIRMED),
+                goal("h2", Team.HOME, ReviewStatus.TO_REVIEW),
+                goal("a1", Team.AWAY, ReviewStatus.CONFIRMED),
+                goal("a2", Team.AWAY, ReviewStatus.DELETED),
+                MatchEvent("n", "m", 2_000, EventType.GOAL, null, 0),
+            ),
+        )
+        assertEquals(LiveScore(Score(2, 1), provisional = true), score)
+    }
+
+    @Test
+    fun liveScore_leavesOutACancelledGoal() {
+        val disallowed = MatchEvent(
+            "d", "m", 2_000, EventType.GOAL_DISALLOWED, null, 0,
+            team = Team.HOME, status = ReviewStatus.CONFIRMED, linkedGoalEventId = "h1",
+        )
+        val score = liveScoreOf(listOf(goal("h1", Team.HOME, ReviewStatus.CONFIRMED), disallowed))
+        assertEquals(LiveScore(Score(0, 0), provisional = false), score)
     }
 }
