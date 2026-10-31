@@ -119,9 +119,25 @@ class TranscriptReadingTest {
     }
 
     @Test
+    fun german() {
+        assertEquals(TranscriptReading(EventType.GOAL, Team.HOME, "Adam", "Łukasz"), read("Tor Adam, Vorlage von Lukas."))
+        assertEquals(TranscriptReading(EventType.YELLOW_CARD, Team.AWAY, "Benek", null), read("Gelbe Karte für Benek"))
+        assertEquals(TranscriptReading(EventType.RED_CARD, Team.HOME, "Adam", null), read("Rote Karte, Adam"))
+        assertEquals(TranscriptReading(EventType.GOAL_DISALLOWED, Team.AWAY, "Barnaba", null), read("Aberkanntes Tor, Barnaba, Abseits"))
+        assertEquals(TranscriptReading(EventType.GOAL, Team.HOME, "Kuba", null), read("Torschütze Adam, nein, Kuba"))
+        assertEquals(EventType.NOTE, read("Notiz: Wechsel in der Abwehr").type)
+    }
+
+    @Test
+    fun german_withoutLineup_nounsAreNotNames() {
+        assertEquals(TranscriptReading(EventType.GOAL, null, "Müller", null), read("Tor Müller, Kopfball nach der Ecke", emptyList()))
+    }
+
+    @Test
     fun madeUpText_readsAsNothing() {
         assertEquals(TranscriptReading(), read("Dziękuję za obejrzenie mojego filmu, zapraszam do subskrybowania"))
         assertEquals(TranscriptReading(), read("Wszelkie prawa zastrzeżone!"))
+        assertEquals(TranscriptReading(), read("Untertitel im Auftrag des ZDF, 2021"))
     }
 
     @Test

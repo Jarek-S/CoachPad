@@ -1,0 +1,24 @@
+<resources>
+    <string name="start_match">Spiel starten</string>
+    <string name="end_match">Spiel beenden</string>
+    <string name="pause_match">Pause</string>
+    <string name="resume_match">Fortsetzen</string>
+    <string name="record">Aufnehmen</string>
+    <string name="stop_recording">Aufnahme stoppen</string>
+    <string name="confirm_shift">Wechsel bestätigen</string>
+    <!-- Notification of the shift timer service -->
+    <string name="match_channel">Spiel</string>
+    <string name="match_in_progress">Spiel läuft</string>
+    <string name="shift_alarm_channel">Wechselalarm</string>
+    <!-- Labels under the small round buttons -->
+    <string name="pause_label">Pause</string>
+    <string name="resume_label">weiter</string>
+    <string name="end_label">Ende</string>
+    <!-- Settings -->
+    <string name="settings">Einstellungen</string>
+    <string name="shift_timer">Wechseltimer</string>
+    <string name="shift_interval">Intervall</string>
+    <string name="minutes_value">%1$d Min.</string>
+    <string name="shorter_interval">Kürzeres Intervall</string>
+    <string name="longer_interval">Längeres Intervall</string>
+</resources>

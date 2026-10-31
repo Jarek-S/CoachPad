@@ -14,7 +14,8 @@ data class TranscriptReading(
 
 /**
  * Reads the type, the team and the players from a recognised recording (design doc, section 4,
- * level 3), e.g. "Gol Adam, asysta Łukasz" or just "Adam, asysta Łukasza".
+ * level 3), e.g. "Gol Adam, asysta Łukasz" or just "Adam, asysta Łukasza"; also in English and
+ * German ("Tor Adam, Vorlage Łukasz").
  *
  * - The type comes from its words ("gol", "żółta kartka", "nieuznany", "notatka"…); without one,
  *   a recording naming a player or an assist is a goal.
@@ -173,6 +174,7 @@ private fun madeUp(text: String): Boolean {
 private val madeUpPhrases = listOf(
     "dziekuje za obejrzenie", "dziekuje za uwage", "prawa zastrzezone", "subskryb", "napisy stworzone",
     "napisy wykonane", "thanks for watching", "thank you for watching", "subscribe",
+    "untertitel", "danke furs zuschauen", "vielen dank fur ihre aufmerksamkeit",
 )
 
 private fun capitalisedName(word: String): Named? =
@@ -196,13 +198,18 @@ private fun teamNamed(folded: List<String>, homeTeam: String?, awayTeam: String?
 private fun nameWords(name: String): List<String> =
     Regex("""[\p{L}\p{N}]+""").findAll(name).map { fold(it.value) }.toList()
 
-/** Lower case without Polish marks, so "Łukasz", "lukasz" and "ŁUKASZ" compare equal. */
+/** Lower case without Polish or German marks, so "Łukasz", "lukasz" and "ŁUKASZ" compare equal. */
 fun fold(text: String): String = buildString {
     for (c in text.lowercase()) {
+        if (c == 'ß') {
+            append("ss")
+            continue
+        }
         append(
             when (c) {
                 'ą' -> 'a'; 'ć' -> 'c'; 'ę' -> 'e'; 'ł' -> 'l'; 'ń' -> 'n'
                 'ó' -> 'o'; 'ś' -> 's'; 'ź' -> 'z'; 'ż' -> 'z'
+                'ä' -> 'a'; 'ö' -> 'o'; 'ü' -> 'u'
                 else -> c
             },
         )
@@ -224,20 +231,23 @@ fun levenshtein(a: String, b: String): Int {
     return previous[b.length]
 }
 
-// Words compared after fold(): Polish first, English for an app set to English
-private val goalWords = setOf("gol", "gola", "bramka", "bramke", "bramki", "goal")
-private val disallowedWords = setOf("nieuznany", "nieuznana", "nieuznanego", "nieuznanej", "disallowed")
-private val yellowWords = setOf("zolta", "zolto", "zoltej", "zolte", "yellow")
-private val redWords = setOf("czerwona", "czerwonej", "czerwien", "red")
-private val cardWords = setOf("kartka", "kartke", "kartki", "card")
-private val noteWords = setOf("notatka", "uwaga", "zmiana", "note")
-private val assistWords = setOf("asysta", "asysty", "asyste", "asystowal", "asystujacy", "podanie", "podal", "assist", "assisted")
-private val scorerWords = setOf("strzelil", "strzelila", "strzelec", "scored", "scorer") + goalWords
-private val correctionWords = setOf("nie", "poprawka", "korekta", "przepraszam", "znaczy", "sorry", "no", "not", "correction")
+// Words compared after fold(): Polish first, then English and German for an app set to those
+private val goalWords = setOf("gol", "gola", "bramka", "bramke", "bramki", "goal", "tor", "tore", "treffer")
+private val disallowedWords = setOf("nieuznany", "nieuznana", "nieuznanego", "nieuznanej", "disallowed", "aberkannt", "aberkanntes", "aberkannter", "annulliert")
+private val yellowWords = setOf("zolta", "zolto", "zoltej", "zolte", "yellow", "gelb", "gelbe", "gelben")
+private val redWords = setOf("czerwona", "czerwonej", "czerwien", "red", "rot", "rote", "roten")
+private val cardWords = setOf("kartka", "kartke", "kartki", "card", "karte")
+private val noteWords = setOf("notatka", "uwaga", "zmiana", "note", "notiz", "bemerkung", "wechsel")
+private val assistWords = setOf("asysta", "asysty", "asyste", "asystowal", "asystujacy", "podanie", "podal", "assist", "assisted", "vorlage", "vorlagen", "vorbereitet")
+private val scorerWords = setOf("strzelil", "strzelila", "strzelec", "scored", "scorer", "torschutze", "erzielt", "getroffen") + goalWords
+private val correctionWords = setOf("nie", "poprawka", "korekta", "przepraszam", "znaczy", "sorry", "no", "not", "correction", "nein", "nicht", "korrektur", "falsch")
 private val allKeywords = goalWords + disallowedWords + yellowWords + redWords + cardWords + noteWords + assistWords + scorerWords + correctionWords
 
 /** Words never taken as a name, even when one is close to them. */
 private val commonWords = setOf(
     "tak", "ale", "jest", "byl", "bylo", "dla", "albo", "oraz", "to", "ten", "ta", "po", "na", "do", "od", "za",
     "and", "the", "was", "for", "with",
+    // German, where every noun is capitalised like a name
+    "und", "der", "die", "das", "den", "dem", "ein", "eine", "einen", "von", "fur", "mit", "ist", "war", "hat",
+    "spieler", "spiel", "minute", "mannschaft", "ecke", "elfmeter", "freistoss", "kopfball", "eigentor",
 )

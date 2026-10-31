@@ -1,0 +1,227 @@
+<resources>
+    <!-- java.time pattern, e.g. "Samstag, 11. Oktober, 14:00" -->
+    <string name="match_start_format">EEEE, d. MMMM, HH:mm</string>
+    <string name="matches_title">Spiele</string>
+    <string name="sync_title">Synchronisierung</string>
+    <string name="back">Zurück</string>
+    <string name="no_matches">Auf dem Handy sind noch keine Spiele. Synchronisiere die Uhr.</string>
+    <string name="match">Spiel</string>
+    <string name="team_home">Heim</string>
+    <string name="team_away">Gast</string>
+    <string name="to_review">Zu prüfen</string>
+    <string name="confirmed">Bestätigt</string>
+    <string name="all_reviewed">Alles geprüft.</string>
+    <string name="hint_describe">Ohne Beschreibung – anhören und ergänzen</string>
+    <string name="hint_missing_team">Keine Mannschaft</string>
+    <string name="no_recording">ohne Aufnahme</string>
+    <string name="play_recording">Aufnahme abspielen</string>
+    <string name="stop_recording">Aufnahme stoppen</string>
+    <string name="type_match_start">Anpfiff</string>
+    <string name="type_match_end">Abpfiff</string>
+    <string name="type_match_pause">Pause</string>
+    <string name="type_match_resume">Fortsetzung</string>
+    <string name="type_goal">Tor</string>
+    <string name="type_goal_disallowed">Aberkanntes Tor</string>
+    <string name="type_yellow_card">Gelbe Karte</string>
+    <string name="type_red_card">Rote Karte</string>
+    <string name="type_note">Notiz</string>
+    <string name="pending_title">Warten auf Synchronisierung</string>
+    <string name="loading">Wird geladen…</string>
+    <string name="no_watch_data">Keine Daten von der Uhr. Öffne die App auf der Uhr.</string>
+    <string name="no_pending_matches">Keine wartenden Spiele.</string>
+    <string name="match_in_progress_on_watch">Spiel läuft auf der Uhr</string>
+    <string name="events_on_phone">Ereignisse auf dem Handy: %d</string>
+    <string name="sync">Synchronisieren</string>
+    <string name="sync_all">Alle synchronisieren</string>
+    <string name="sync_running">Synchronisierung… empfangen: %d</string>
+    <string name="sync_done">Synchronisierung beendet, empfangen: %d</string>
+    <string name="sync_rejected">Die Uhr hat die Synchronisierung abgelehnt: Spiel läuft</string>
+    <string name="sync_watch_unavailable">Uhr nicht erreichbar</string>
+    <string name="watch_unavailable_last_known">Uhr nicht erreichbar – Stand der letzten Verbindung</string>
+    <string name="delete">Löschen</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete_match_title">Spiel von der Uhr löschen?</string>
+    <string name="delete_match_text">%1$s, %2$s. Ereignisse und Aufnahmen dieses Spiels, die noch auf der Uhr sind, werden gelöscht. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="delete_phone_match_title">Spiel löschen?</string>
+    <string name="delete_phone_match_text">%1$s, %2$s. Alle Ereignisse, Aufnahmen und Aufstellungen dieses Spiels werden vom Handy gelöscht. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="delete_match_hint">Halte ein Spiel gedrückt, um es zu löschen</string>
+    <string name="new_match">Neues Spiel</string>
+    <string name="planned_match">Geplant</string>
+    <string name="planned_offer">Aufstellung aus einem für diesen Tag geplanten Spiel übernehmen?</string>
+    <string name="planned_offer_one">Aufstellung aus dem geplanten Spiel „%1$s“ übernehmen?</string>
+    <string name="decline_planned">Nicht verbinden</string>
+    <string name="take_from_planned">Aus geplantem Spiel übernehmen</string>
+    <string name="planned_choice">%1$s · %2$s</string>
+    <string name="take_over_planned">Verbinden</string>
+    <string name="take_over_planned_title">Mit geplantem Spiel verbinden</string>
+    <string name="take_over_planned_text">Dieses Spiel übernimmt die Mannschaftsnamen und Aufstellungen des gewählten Spiels, das dann aus der Liste verschwindet.</string>
+    <string name="sync_no_response">Die Uhr antwortet nicht mehr. Die Daten sind noch auf der Uhr – versuche es erneut.</string>
+
+    <string name="edit_position">Zu prüfen · %1$d von %2$d</string>
+    <string name="play_minute_recorded">Spielzeit · aufgenommen um %s</string>
+    <string name="type_label">Art</string>
+    <string name="team_label">Mannschaft</string>
+    <string name="note_placeholder">Z. B. ein Wechsel, eine taktische Bemerkung</string>
+    <string name="scorer_label">Torschütze</string>
+    <string name="assist_label">Vorlage</string>
+    <string name="player_label">Spieler</string>
+    <!-- Scorer with the assist, e.g. "Marcin (Vorlage: Jurek)" -->
+    <string name="player_with_assist">%1$s (Vorlage: %2$s)</string>
+    <string name="assist_only">Vorlage: %s</string>
+    <string name="note_placeholder_extra">Z. B. Eigentor, Tor des Monats</string>
+    <string name="skip">Überspringen</string>
+    <string name="confirm_next">Bestätigen und weiter</string>
+    <string name="save">Speichern</string>
+    <string name="choose_type">Wähle die Art des Ereignisses</string>
+    <string name="choose_team">Wähle die Mannschaft</string>
+    <string name="delete_recording">Aufnahme löschen</string>
+    <string name="recording_deleted">Aufnahme gelöscht</string>
+    <string name="undo">Rückgängig</string>
+    <string name="cancels_goal">Hebt Tor auf</string>
+    <string name="change">Ändern</string>
+    <string name="link_choose_team">Wähle die Mannschaft, um ein Tor zuzuordnen</string>
+    <string name="link_no_goal">Kein früheres Tor dieser Mannschaft gefunden</string>
+    <string name="link_none">Keine Zuordnung</string>
+    <string name="hint_no_goal">Kein Tor zum Zuordnen gefunden</string>
+    <string name="cancels_goal_at">hebt das Tor um %s auf</string>
+    <string name="not_counted">zählt nicht zum Ergebnis</string>
+
+    <!-- Match text to share; java.time pattern of its date, e.g. "Sonntag, 11. Oktober 2026, 14:00" -->
+    <string name="share_date_format">EEEE, d. MMMM yyyy, HH:mm</string>
+    <!-- %s: minute of the disallowed goal, e.g. "42'" -->
+    <string name="share_not_counted">zählt nicht (aberkannt, %s)</string>
+    <string name="share_scorers_title">Torschützen und Vorlagen</string>
+
+    <!-- CSV export: column names, in this order and number -->
+    <string-array name="csv_columns">
+        <item>spiel</item>
+        <item>datum</item>
+        <item>minute</item>
+        <item>spielzeit</item>
+        <item>uhrzeit</item>
+        <item>art</item>
+        <item>mannschaft</item>
+        <item>spieler</item>
+        <item>vorlage</item>
+        <item>notiz</item>
+        <item>zaehlt</item>
+    </string-array>
+    <!-- CSV export: whether a goal counts towards the score -->
+    <string name="csv_yes">ja</string>
+    <string name="csv_no">nein</string>
+
+    <!-- Export from the match review -->
+    <string name="share">Teilen</string>
+    <string name="export_text">Text</string>
+    <string name="export_csv">CSV (Tabelle)</string>
+    <string name="export_json">JSON für die Plattform</string>
+    <string name="export_anyway">Exportieren</string>
+    <string name="export_unreviewed_text">Nur bestätigte Ereignisse werden exportiert. Trotzdem exportieren?</string>
+
+    <!-- Match lineup (phase 5) -->
+    <string name="lineup_title">Aufstellungen</string>
+    <!-- Team tab: name and number of players, e.g. "Adler · 9" -->
+    <string name="lineup_tab">%1$s · %2$d</string>
+    <string name="team_name_home">Mannschaftsname (Heim)</string>
+    <string name="team_name_away">Mannschaftsname (Gast)</string>
+    <string name="add_player">Spieler hinzufügen</string>
+    <string name="add_player_hint">z. B. 7 Lukas – Enter fügt den nächsten hinzu</string>
+    <string name="lineup_empty">Keine Spieler – trage den Torschützen im Ereignis von Hand ein.</string>
+    <string name="lineup_tap_hint">Tippe auf einen Spieler, um Nummer oder Namen zu korrigieren.</string>
+    <string name="remove_player">%s entfernen</string>
+    <string name="outside_lineup">„%s“ verwenden (nicht in der Aufstellung)</string>
+
+    <!-- Settings: speech recognition (phase 6) -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="stt_title">Spracherkennung (KI)</string>
+    <string name="stt_description">Aufnahmen werden an OpenAI Whisper gesendet und in Text umgewandelt. Abgerechnet nach Nutzung über dein OpenAI-Konto.</string>
+    <string name="api_key_label">OpenAI-API-Schlüssel</string>
+    <string name="api_key_hint">Erstelle einen Schlüssel auf der OpenAI-Website, kopiere ihn und füge ihn hier ein – oder fülle ihn aus deinem Passwortmanager aus.</string>
+    <string name="get_api_key">Schlüssel bei OpenAI holen</string>
+    <string name="paste">Einfügen</string>
+    <string name="api_key_saved">Gespeicherter Schlüssel: %s</string>
+    <string name="check">Prüfen</string>
+    <string name="key_works">Der Schlüssel funktioniert.</string>
+    <string name="key_rejected">OpenAI hat den Schlüssel abgelehnt. Prüfe ihn und füge ihn erneut ein.</string>
+    <string name="key_rate_limited">Der Schlüssel funktioniert, aber OpenAI meldet ein Limit oder kein Guthaben auf dem Konto.</string>
+    <string name="key_not_checked">Keine Verbindung: Der Schlüssel ist gespeichert, aber nicht geprüft.</string>
+    <string name="key_service_error">OpenAI hat nicht richtig geantwortet: Der Schlüssel ist gespeichert, prüfe ihn später.</string>
+
+    <!-- Speech recognition in the match review -->
+    <string name="heard">Gehört: „%s“</string>
+    <string name="transcribe">Erkennen</string>
+    <string name="transcribing">Aufnahmen werden erkannt… %1$d von %2$d</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="stt_failed_unauthorized">Erkennung gestoppt: OpenAI hat den Schlüssel abgelehnt. Prüfe ihn in den Einstellungen.</string>
+    <string name="stt_failed_rate_limited">Erkennung gestoppt: Limit oder kein Guthaben auf dem OpenAI-Konto.</string>
+    <string name="stt_failed_network">Erkennung gestoppt: keine Verbindung.</string>
+    <string name="stt_failed_service">Erkennung gestoppt: OpenAI hat nicht richtig geantwortet.</string>
+    <!-- Words said in recordings, given to speech recognition so it spells them right; comma separated -->
+    <string name="stt_hint_words">Tor, Vorlage, gelbe Karte, rote Karte, aberkanntes Tor, Notiz</string>
+
+    <plurals name="players">
+        <item quantity="one">%d Spieler</item>
+        <item quantity="other">%d Spieler</item>
+    </plurals>
+    <plurals name="recordings">
+        <item quantity="one">%d Aufnahme</item>
+        <item quantity="other">%d Aufnahmen</item>
+    </plurals>
+    <plurals name="to_review_count">
+        <item quantity="one">%d zu prüfen</item>
+        <item quantity="other">%d zu prüfen</item>
+    </plurals>
+    <plurals name="events">
+        <item quantity="one">%d Ereignis</item>
+        <item quantity="other">%d Ereignisse</item>
+    </plurals>
+    <plurals name="export_unreviewed_title">
+        <item quantity="one">%d Ereignis nicht geprüft</item>
+        <item quantity="other">%d Ereignisse nicht geprüft</item>
+    </plurals>
+    <plurals name="untranscribed">
+        <item quantity="one">%d Aufnahme nicht erkannt</item>
+        <item quantity="other">%d Aufnahmen nicht erkannt</item>
+    </plurals>
+    <plurals name="share_goals">
+        <item quantity="one">%d Tor</item>
+        <item quantity="other">%d Tore</item>
+    </plurals>
+    <plurals name="share_assists">
+        <item quantity="one">%d Vorlage</item>
+        <item quantity="other">%d Vorlagen</item>
+    </plurals>
+    <string name="add_event">Ereignis hinzufügen</string>
+    <string name="new_event">Neues Ereignis</string>
+    <string name="added_by_hand">von Hand hinzugefügt</string>
+    <string name="minute_label">Minute</string>
+    <string name="minute_optional">optional</string>
+    <string name="add_another">Weiteres hinzufügen</string>
+    <string name="delete_event">Ereignis löschen</string>
+    <string name="event_deleted">Ereignis gelöscht</string>
+    <string name="share_day_format">EEEE, d. MMMM yyyy</string>
+    <string name="match_day_format">EEEE, d. MMMM</string>
+    <string name="enter_from_notes">Aus Notizen eintragen</string>
+    <string name="match_day">Spieltag</string>
+    <string name="planned_on">Geplant · %1$s</string>
+    <string name="change_match_day">Spieltag ändern</string>
+    <string name="next">Weiter</string>
+    <string name="planned_later">Für einen späteren Tag geplant: Ändere das Datum, um es aus Notizen einzutragen</string>
+    <string name="start_match">Spiel starten</string>
+    <string name="live_match">Live</string>
+    <string name="live_paused">Pausiert</string>
+    <string name="pause_match">Pause</string>
+    <string name="resume_match">Fortsetzen</string>
+    <string name="end_match">Spiel beenden</string>
+    <string name="end_match_hint">Halte „Spiel beenden“ gedrückt, um es zu beenden</string>
+    <string name="other_match_live">Auf dem Handy läuft ein anderes Spiel: Beende es zuerst</string>
+    <string name="quick_goal">Tor · %s</string>
+    <string name="quick_card">Karte</string>
+    <string name="done">Fertig</string>
+    <string name="start_mic">Aufnehmen</string>
+    <string name="stop_mic">Aufnahme stoppen</string>
+    <string name="recording_for">Aufnahme · %s</string>
+    <string name="mic_hint">Tippe, um aufzunehmen, was passiert ist</string>
+    <string name="mic_denied">Das Mikrofon ist nicht erlaubt: Erlaube es in den App-Einstellungen</string>
+    <string name="mic_failed">Das Mikrofon konnte nicht geöffnet werden</string>
+</resources>

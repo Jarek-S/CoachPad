@@ -1,5 +1,5 @@
 <resources>
-    <!-- English is the default; Polish in values-pl -->
+    <!-- English is the default; Polish in values-pl, German in values-de -->
     <string name="app_name" translatable="false">CoachPad</string>
     <!-- java.time pattern, e.g. "Saturday, 11 October, 14:00" -->
     <string name="match_start_format">EEEE, d MMMM, HH:mm</string>

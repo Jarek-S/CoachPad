@@ -1,5 +1,5 @@
 <resources>
-    <!-- English is the default; Polish in values-pl -->
+    <!-- English is the default; Polish in values-pl, German in values-de -->
     <string name="app_name" translatable="false">CoachPad</string>
     <string name="start_match">Start match</string>
     <string name="end_match">End match</string>
