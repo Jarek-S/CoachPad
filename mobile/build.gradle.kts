@@ -15,14 +15,29 @@ android {
         applicationId = "eu.coachpad"
         minSdk = 30
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = providers.gradleProperty("coachpad.versionCode").get().toInt()
+        versionName = providers.gradleProperty("coachpad.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // The upload key lives outside the repo; its path and passwords come from
+    // ~/.gradle/gradle.properties, so builds without them stay unsigned
+    val uploadStoreFile = providers.gradleProperty("coachpad.upload.storeFile").orNull
+    signingConfigs {
+        if (uploadStoreFile != null) {
+            create("upload") {
+                storeFile = file(uploadStoreFile)
+                storePassword = providers.gradleProperty("coachpad.upload.storePassword").get()
+                keyAlias = providers.gradleProperty("coachpad.upload.keyAlias").get()
+                keyPassword = providers.gradleProperty("coachpad.upload.keyPassword").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("upload")
             optimization {
                 enable = false
             }
