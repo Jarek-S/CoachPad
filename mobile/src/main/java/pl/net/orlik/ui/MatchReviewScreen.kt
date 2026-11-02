@@ -372,10 +372,11 @@ private fun EventRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                Text(
-                    stringResource(R.string.no_recording),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // An icon, not text: a word like "Aufnahme" doesn't fit the column and breaks mid-word
+                Icon(
+                    painterResource(R.drawable.ic_mic_off),
+                    contentDescription = stringResource(R.string.no_recording),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 )
             }
         }

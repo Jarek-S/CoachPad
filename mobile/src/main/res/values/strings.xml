@@ -53,11 +53,11 @@
     <string name="planned_match">Planned</string>
     <string name="planned_offer">Take the lineup from a match planned for this day?</string>
     <string name="planned_offer_one">Take the lineup from the planned match “%1$s”?</string>
-    <string name="decline_planned">Don’t join</string>
+    <string name="decline_planned">Don’t link</string>
     <string name="take_from_planned">Take from a planned match</string>
     <string name="planned_choice">%1$s · %2$s</string>
-    <string name="take_over_planned">Join</string>
-    <string name="take_over_planned_title">Join with a planned match</string>
+    <string name="take_over_planned">Link</string>
+    <string name="take_over_planned_title">Link to a planned match</string>
     <string name="take_over_planned_text">This match takes the team names and lineups of the chosen match, which then leaves the list.</string>
     <string name="sync_no_response">The watch stopped responding. The data is still on the watch — try again.</string>
 

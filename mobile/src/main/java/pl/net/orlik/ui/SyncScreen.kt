@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -162,20 +161,21 @@ private fun syncStatusText(status: SyncStatus): String? = when (status) {
 @Composable
 private fun PendingMatchRow(match: PendingMatch, enabled: Boolean, onSync: () -> Unit, onDelete: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(formatMatchStart(match.startedAt), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    pluralStringResource(R.plurals.recordings, match.recordingCount, match.recordingCount) +
-                        " · " + pluralStringResource(R.plurals.events, match.eventCount, match.eventCount),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            TextButton(onClick = onDelete, enabled = enabled) {
-                Text(stringResource(R.string.delete), color = if (enabled) MaterialTheme.colorScheme.error else Color.Unspecified)
-            }
-            TextButton(onClick = onSync, enabled = enabled) {
-                Text(stringResource(R.string.sync))
+        // Buttons below the text, not beside it: longer translations ("Synchronisieren") squeeze the date into three lines
+        Column(modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp, end = 8.dp)) {
+            Text(formatMatchStart(match.startedAt), style = MaterialTheme.typography.titleMedium)
+            Text(
+                pluralStringResource(R.plurals.recordings, match.recordingCount, match.recordingCount) +
+                    " · " + pluralStringResource(R.plurals.events, match.eventCount, match.eventCount),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDelete, enabled = enabled) {
+                    Text(stringResource(R.string.delete), color = if (enabled) MaterialTheme.colorScheme.error else Color.Unspecified)
+                }
+                TextButton(onClick = onSync, enabled = enabled) {
+                    Text(stringResource(R.string.sync))
+                }
             }
         }
     }
