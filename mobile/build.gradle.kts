@@ -43,6 +43,13 @@ android {
             }
         }
     }
+    // All languages in every install: the per-app language setting (locales_config) may pick one
+    // the system doesn't use, and Google Play installs only the system's language splits
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
